@@ -1,71 +1,116 @@
-{-# LANGUAGE OverloadedStrings #-}
+--
+-- Copyright © 2013-2015 Anchor Systems, Pty Ltd and Others
+--
+-- The code in this file, and the program it is a part of, is
+-- made available to you by its authors as open source software:
+-- you can redistribute it and/or modify it under the terms of
+-- the 3-clause BSD licence.
+--
+-- /Description/
+-- This module exports the public-facing Ceilometer types
+-- and the interface for them.
+--
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveFoldable     #-}
+{-# LANGUAGE DeriveFunctor      #-}
+{-# LANGUAGE DeriveTraversable  #-}
+{-# LANGUAGE TemplateHaskell    #-}
+{-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE TypeOperators      #-}
 
-module Ceilometer.Types where
+{-# OPTIONS -fno-warn-unused-binds #-}
 
-import           Control.Isomorphism.Partial.Iso
-import           Data.Bimap                      (Bimap)
-import qualified Data.Bimap                      as B
-import           Data.HashMap.Strict             (HashMap)
-import qualified Data.HashMap.Strict             as H
-import           Data.Text                       (Text)
-import qualified Data.Text                       as T
-import           Data.Word
+module Ceilometer.Types
+  ( -- * Payload Raws
+    PRSimple(PRSimple), prSimple
+  , PRCompoundEvent(PRCompoundEvent), prCompoundEvent
+  , PRCompoundPollster(PRCompoundPollster), prCompoundPollster
 
-import           Marquise.Client
-import           Vaultaire.Types
+    -- * Payload Decoded Fields
+  , PFValue, PFValue64, PFValue32, PFValueText
+  , PFEndpoint(..), pfEndpoint
+  , PFVolumeStatus(..), pfVolumeStatus
+  , PFVolumeVerb(..), pfVolumeVerb
+  , PFInstanceStatus(..), pfInstanceStatus
+
+    -- * Payload Decoded Points
+  , PDVolume(PDVolume), pdVolume
+  , PDCPU(PDCPU), pdCPU
+  , PDInstanceVCPU(PDInstanceVCPU), pdInstanceVCPU
+  , PDInstanceRAM(PDInstanceRAM), pdInstanceRAM
+  , PDInstanceDisk(PDInstanceDisk), pdInstanceDisk
+  , PDInstanceFlavor(PDInstanceFlavor), pdInstanceFlavor
+
+    -- * Values
+  , Valued, value
+  , Timed(Timed), time
+
+    -- * Interface
+  , Env(..)
+  , Flavor, FlavorMap
+  ) where
+
+import           Control.Applicative
+import           Control.Lens              hiding (Fold, Simple)
+import           Data.Binary               (Word64)
+import           Data.Foldable
 
 import           Ceilometer.Types.Base
-import           Ceilometer.Types.IP
+import           Ceilometer.Types.CPU
+import           Ceilometer.Types.Instance
 import           Ceilometer.Types.Volume
+import           Marquise.Client
 
--- Snapshots
-data SnapshotStatus
-data SnapshotVerb
 
--- Images
-data ImageStatus
-data ImageVerb
-
--- Instances
+-- | Values with a TimeStamp.
 --
-newtype Flavor = Flavor String
-  deriving (Show, Eq, Ord)
+data Timed value = Timed { _time :: !Word64, _val :: value }
+     deriving (Show, Functor, Foldable, Traversable)
 
-type FlavorMap = Bimap Flavor Word64
+makeLenses ''Timed
 
-data InstanceStatus
-data InstanceVerb
+-- | A family of lens that allows viewing/updating the payload value of decoded
+--   Ceilometer points.
+--
+--   note: this is a Lens and not just a Getter since we wish to reuse the logic
+--         for collector (making the points) and user (reading the points).
+--
+class Valued a where
+  type PFValue a
+  value :: Lens' a (PFValue a)
 
-data InstancePayload = InstanceFlavor Flavor
-                     | InstanceRam    Word64
-                     | InstanceDisk   Word64
-                     | InstanceVCpu   Word64
-  deriving (Show, Eq, Ord)
+instance Valued a => Valued (Timed a) where
+  type PFValue (Timed a) = PFValue a
+  value f (Timed t x) = Timed t <$> value f x
+
+instance Valued PDCPU      where
+  type PFValue PDCPU = PFValue64
+  value f (PDCPU x)  = PDCPU <$> f x
+
+instance Valued PDVolume   where
+  type PFValue PDVolume      = PFValue32
+  value f (PDVolume a b c x) = PDVolume a b c <$> f x
+
+instance Valued PDInstanceFlavor where
+  type PFValue PDInstanceFlavor  = PFValueText
+  value f (PDInstanceFlavor s x) = PDInstanceFlavor s <$> f x
+
+instance Valued PDInstanceVCPU where
+  type PFValue PDInstanceVCPU  = PFValue32
+  value f (PDInstanceVCPU s x) = PDInstanceVCPU s <$> f x
+
+instance Valued PDInstanceRAM where
+  type PFValue PDInstanceRAM  = PFValue32
+  value f (PDInstanceRAM s x) = PDInstanceRAM s <$> f x
+
+instance Valued PDInstanceDisk where
+  type PFValue PDInstanceDisk  = PFValue32
+  value f (PDInstanceDisk s x) = PDInstanceDisk s <$> f x
 
 
-data CeilometerPoint
-  = InstancePoint       Address TimeStamp InstanceStatus                       InstancePayload
-  | IPEventPoint        Address TimeStamp IPStatus       IPVerb       Endpoint
-  | VolumeEventPoint    Address TimeStamp VolumeStatus   VolumeVerb   Endpoint Word64
-  | SnapshotEventPoint  Address TimeStamp SnapshotStatus SnapshotVerb Endpoint Word64
-  | ImageEventPoint     Address TimeStamp ImageStatus    ImageVerb             Word64
-  | StandardPoint       Address TimeStamp                                      Word64
-
-type VaultIso = Iso SimplePoint
-
-isEvent :: SourceDict -> Bool
-isEvent sd = case lookupSource "_event" sd of
-    Just "1" -> True
-    Just "0" -> False
-    Nothing  -> False
-
-metricName :: SourceDict -> Maybe Text
-metricName = lookupSource "metric_name"
-
-ceilometerIso :: FlavorMap -> SourceDict -> Iso SimplePoint CeilometerPoint
-ceilometerIso fm sd = unsafeMakeIso apply unapply
-  where
-    apply (SimplePoint addr ts v) = case (metricName sd, isEvent sd) of
-        (Nothing, _) -> Nothing
-        (Just "disk.write.bytes", False) -> Just $ StandardPoint addr ts v
-    unapply = undefined
+-- | Information needed to parse/fold Ceilometer types, supplied by users.
+--
+data    Env       = Env { _flavormap  :: FlavorMap
+                        , _sourcedict :: SourceDict
+                        , _start      :: TimeStamp
+                        , _end        :: TimeStamp }
