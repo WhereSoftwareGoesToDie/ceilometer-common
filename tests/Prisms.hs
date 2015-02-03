@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+module Prisms where
 
 import           Control.Lens          hiding (elements)
 import           Test.Hspec
@@ -8,9 +9,6 @@ import           Test.QuickCheck
 import           Ceilometer.Types
 import           Properties
 import           SampleData
-
-main :: IO ()
-main = hspec suite
 
 suite :: Spec
 suite = do

@@ -59,7 +59,7 @@ import           Ceilometer.Types.Base
 import           Ceilometer.Types.CPU
 import           Ceilometer.Types.Instance
 import           Ceilometer.Types.Volume
-import           Marquise.Client
+import           Vaultaire.Types
 
 
 -- | Values with a TimeStamp.

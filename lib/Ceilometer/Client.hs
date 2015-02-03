@@ -26,9 +26,9 @@ import           Control.Lens
 import qualified Data.Traversable    as T
 import           Data.Typeable
 import           Data.Word
-import           Marquise.Client
 import           Pipes
 
+import           Vaultaire.Types
 import           Ceilometer.Fold
 import           Ceilometer.Infer
 import           Ceilometer.Types

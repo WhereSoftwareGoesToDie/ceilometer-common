@@ -1,3 +1,4 @@
+module Fold where
 
 {-# OPTIONS -fno-warn-missing-signatures #-}
 
@@ -11,9 +12,6 @@ import           Ceilometer.Fold
 import           Ceilometer.Types
 
 import           SampleData
-
-main :: IO ()
-main = hspec suite
 
 suite :: Spec
 suite = do
