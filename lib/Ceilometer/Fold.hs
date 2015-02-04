@@ -156,10 +156,11 @@ sEvent (start, end) (More (Just prev, acc)) x
 
 bEvent = More (Nothing, M.empty)
 
-eEvent (_, end) = M.foldlWithKey (\a k v -> a + (fromIntegral k * v)) 0 . go . unwrapAcc
+eEvent (start, end) = M.foldlWithKey (\a k v -> a + (fromIntegral k * v)) 0 . go . unwrapAcc
   where -- deal with the dangling last event
         go (Just x, acc)
-          | d <- end - x ^. time, d > 0 = insertEvent x d acc
+          | d <- end - s x, d > 0 = insertEvent x d acc
         go a@_                          = snd a
+        s x = max start (x ^. time)
 
 insertEvent x = M.insertWith (+) (x ^. value)
