@@ -19,6 +19,10 @@ module Ceilometer.Client
     decodeChecked, decode, decodeWith
     -- * Folding
   , foldDecoded, foldDecodedWith
+    -- * Re-exports
+  , module Ceilometer.Types
+  , module Ceilometer.Fold
+  , module Ceilometer.Infer
   ) where
 
 import           Control.Applicative
