@@ -28,6 +28,7 @@ module Ceilometer.Fold
   , foldInstanceRAM
   , foldInstanceDisk
     -- * Utilities
+  , FoldResult
   , Acc(..), PFold(..), pFold, pFoldStream
   , generalizeFold
   , timewrapFold
@@ -44,12 +45,20 @@ import           Ceilometer.Types
 import           Control.PFold
 
 
+type family FoldResult x where
+  FoldResult PDCPU            = Word64
+  FoldResult PDVolume         = Word64
+  FoldResult PDInstanceVCPU   = Map PFValue32 Word64
+  FoldResult PDInstanceRAM    = Map PFValue32 Word64
+  FoldResult PDInstanceDisk   = Map PFValue32 Word64
+  FoldResult PDInstanceFlavor = Map PFValueText Word64
+
 -- Fold ------------------------------------------------------------------------
 
-foldCPU :: L.Fold PDCPU Word64
+foldCPU :: L.Fold PDCPU (FoldResult PDCPU)
 foldCPU = L.Fold sCumulative bCumulative eCumulative
 
-foldVolume :: Window -> PFold (Timed PDVolume) Word64
+foldVolume :: Window -> PFold (Timed PDVolume) (FoldResult PDVolume)
 foldVolume window = PFold step bEvent (eEvent window)
   where -- Stop folding as soon as the volume is deleted
         step (More (prev,acc)) (Timed end (PDVolume _ VolumeDelete _ _))
@@ -60,17 +69,17 @@ foldVolume window = PFold step bEvent (eEvent window)
         go end acc (Just x) = M.insertWith (+) (x ^. value) (end - x ^. time) acc
         go _   acc  Nothing = acc
 
-foldInstanceFlavor :: L.Fold (Timed PDInstanceFlavor) (Map (PFValue PDInstanceFlavor) Word64)
-foldInstanceFlavor = L.Fold sPollster bPollster snd
+foldInstanceFlavor :: L.Fold (Timed PDInstanceFlavor) (FoldResult PDInstanceFlavor)
+foldInstanceFlavor =  L.Fold sPollster bPollster snd
 
-foldInstanceVCPU :: L.Fold (Timed PDInstanceVCPU) (Map (PFValue PDInstanceVCPU) Word64)
-foldInstanceVCPU = L.Fold sPollster bPollster snd
+foldInstanceVCPU   :: L.Fold (Timed PDInstanceVCPU) (FoldResult PDInstanceVCPU)
+foldInstanceVCPU   =  L.Fold sPollster bPollster snd
 
-foldInstanceRAM :: L.Fold (Timed PDInstanceRAM) (Map (PFValue PDInstanceRAM) Word64)
-foldInstanceRAM = L.Fold sPollster bPollster snd
+foldInstanceRAM    :: L.Fold (Timed PDInstanceRAM) (FoldResult PDInstanceRAM)
+foldInstanceRAM    =  L.Fold sPollster bPollster snd
 
-foldInstanceDisk :: L.Fold (Timed PDInstanceDisk) (Map (PFValue PDInstanceDisk) Word64)
-foldInstanceDisk = L.Fold sPollster bPollster snd
+foldInstanceDisk   :: L.Fold (Timed PDInstanceDisk) (FoldResult PDInstanceDisk)
+foldInstanceDisk   =  L.Fold sPollster bPollster snd
 
 
 -- Utilities -------------------------------------------------------------------

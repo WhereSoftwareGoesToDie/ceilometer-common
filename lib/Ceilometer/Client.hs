@@ -20,7 +20,7 @@
 --
 module Ceilometer.Client
   ( -- * Combo
-    decodeAndFold, decodeAndFold_
+    decodeAndFold
     -- * Decoding
   , decode, decodeWith
     -- * Folding
@@ -58,29 +58,12 @@ decodeAndFold
   => proxy a                    -- ^ We expect these @SimplePoint@ to be of type `a`
   -> Env                        -- ^ @SourceDict@ to verify the above claim.
   -> Producer SimplePoint m ()  -- ^ The raw data points to parse and aggregate.
-  -> m (Maybe FoldResult)       -- ^ Result
+  -> m (Maybe (FoldResult a))   -- ^ Result
 decodeAndFold _ env points
   = let decoded :: Maybe (Producer (Timed a) m ())
         decoded =  useDecoding <$> decode env
     in  fromMaybe (return Nothing) $ foldDecoded env <$> decoded
     where useDecoding d = points >-> d >-> handleParseFails
-
--- | Like `decodeAndFold`, but the caller does not know which type they expect.
---
---   Will decode and fold according to whatever the @SourceDict@ claims.
-decodeAndFold_
-  :: (Monad m, Applicative m)
-  => Env                        -- ^ @SourceDict@ to use and guess how to decode and fold.
-  -> Producer SimplePoint m ()  -- ^ The raw data points to parse and aggregate.
-  -> m (Maybe FoldResult)       -- ^ Result
-decodeAndFold_ (Env fm sd (TimeStamp s) (TimeStamp e)) points = case lookupMetricName sd of
-    Just "cpu"             -> go pCPU fCPU
-    Just "volume.size"     -> go pVolume (fVolume s e)
-    Just "instance_flavor" -> go (pInstanceFlavor fm) fInstanceFlavor
-    Just "instance_vcpu"   -> go pInstanceVCPU fInstanceVCPU
-    Just "instance_ram"    -> go pInstanceRAM fInstanceRAM
-    _ -> return Nothing
-    where go p f = Just <$> foldDecodedWith f (points >-> decodeWith (clonePrism p) >-> handleParseFails)
 
 
 -- Decode ----------------------------------------------------------------------
@@ -130,7 +113,7 @@ foldDecoded
   :: (Typeable a, Applicative m, Monad m)
   => Env                     -- ^ @SourceDict@ to use and guess the correct decoding
   -> Producer (Timed a) m () -- ^ Data points
-  -> m (Maybe FoldResult)
+  -> m (Maybe (FoldResult a))
 foldDecoded env points = T.sequenceA $ flip pFoldStream points <$> inferFold env
 
 -- | Folds a stream of decoded points,
@@ -138,7 +121,7 @@ foldDecoded env points = T.sequenceA $ flip pFoldStream points <$> inferFold env
 --
 foldDecodedWith
   :: (Monad m)
-  => PFold (Timed a) FoldResult -- ^ Use this particular fold method
-  -> Producer (Timed a) m ()    -- ^ Data points
-  -> m FoldResult
+  => PFold (Timed a) (FoldResult a) -- ^ Use this particular fold method
+  -> Producer (Timed a) m ()        -- ^ Data points
+  -> m (FoldResult a)
 foldDecodedWith = pFoldStream

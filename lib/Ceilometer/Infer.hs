@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
 
 {-# OPTIONS -fno-warn-missing-signatures #-}
@@ -23,17 +24,13 @@ module Ceilometer.Infer
   ( -- * Inferences
     inferPrism
   , inferFold
-  , FoldResult(..)
-    -- * Wrappers around prisms and folds
-  , pCPU, pVolume, pInstanceVCPU, pInstanceRAM, pInstanceFlavor
-  , fCPU, fVolume, fInstanceVCPU, fInstanceRAM, fInstanceFlavor
+  , FoldResult
     -- * Utilities
   , lookupEvent, lookupMetricName
   ) where
 
 import           Control.Applicative
 import           Control.Lens
-import           Data.Map            (Map)
 import           Data.Text           (Text)
 import           Data.Typeable
 import           Data.Word
@@ -47,16 +44,19 @@ lookupMetricName = lookupSource "metric_name"
 lookupEvent      = lookupSource "_event"
 
 
-inferPrism :: forall a. Typeable a => Env -> Maybe (APrism' Word64 a)
+inferPrism :: forall a. Typeable a
+           => Env -> Maybe (APrism' Word64 a)
 inferPrism e = fst <$> inferPrismFold e
 
-inferFold  :: forall a. Typeable a => Env -> Maybe (PFold (Timed a) FoldResult)
+inferFold  :: forall a. Typeable a
+           => Env -> Maybe (PFold (Timed a) (FoldResult a))
 inferFold  e = snd <$> inferPrismFold e
 
 -- | Infers the schema of the raw stream from the @SourceDict@,
 --   and gives a decoding and folding method for that schema type.
 --
-inferPrismFold :: forall a. Typeable a => Env -> Maybe (APrism' Word64 a, PFold (Timed a) FoldResult)
+inferPrismFold :: forall a. Typeable a
+               => Env -> Maybe (APrism' Word64 a, PFold (Timed a) (FoldResult a))
 inferPrismFold (Env fm sd (TimeStamp s) (TimeStamp e)) = do
   name <- lookupMetricName sd
   case name of
@@ -79,30 +79,25 @@ inferPrismFold (Env fm sd (TimeStamp s) (TimeStamp e)) = do
 
     _ -> Nothing
 
--- | Universal wrapper so that clients can deal with fold results transparently
-data FoldResult = W  Word64
-                | M1 (Map PFValue32 Word64)
-                | M2 (Map PFValueText Word64)
-
 -- "Universalised" versions of prisms and folds
 
 pCPU :: APrism' Word64 PDCPU
-pCPU  = prSimple . pdCPU
-
-fCPU = W <$> generalizeFold (timewrapFold foldCPU)
+pCPU = prSimple . pdCPU
 
 pVolume :: APrism' Word64 PDVolume
-pVolume     = prCompoundEvent . pdVolume
-fVolume s e = W <$> foldVolume (s,e)
+pVolume = prCompoundEvent . pdVolume
 
 pInstanceFlavor :: FlavorMap -> APrism' Word64 PDInstanceFlavor
 pInstanceFlavor fm = prCompoundPollster . pdInstanceFlavor fm
-fInstanceFlavor    = M2 <$> generalizeFold foldInstanceFlavor
 
 pInstanceVCPU :: APrism' Word64 PDInstanceVCPU
-pInstanceVCPU   = prCompoundPollster . pdInstanceVCPU
-fInstanceVCPU   = M1 <$> generalizeFold foldInstanceVCPU
+pInstanceVCPU = prCompoundPollster . pdInstanceVCPU
 
-pInstanceRAM  :: APrism' Word64 PDInstanceRAM
-pInstanceRAM    = prCompoundPollster . pdInstanceRAM
-fInstanceRAM    = M1 <$> generalizeFold foldInstanceRAM
+pInstanceRAM :: APrism' Word64 PDInstanceRAM
+pInstanceRAM = prCompoundPollster . pdInstanceRAM
+
+fCPU            = generalizeFold (timewrapFold foldCPU)
+fVolume s e     = foldVolume (s,e)
+fInstanceFlavor = generalizeFold foldInstanceFlavor
+fInstanceVCPU   = generalizeFold foldInstanceVCPU
+fInstanceRAM    = generalizeFold foldInstanceRAM
