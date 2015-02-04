@@ -1,4 +1,8 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators       #-}
 
 --
 -- Copyright © 2013-2015 Anchor Systems, Pty Ltd and Others
@@ -15,48 +19,78 @@
 -- For flexibility use the Collector and Fold modules.
 --
 module Ceilometer.Client
-  ( -- * Decoding
-    decodeChecked, decode, decodeWith
+  ( -- * Combo
+    decodeAndFold, decodeAndFold_
+    -- * Decoding
+  , decode, decodeWith
     -- * Folding
   , foldDecoded, foldDecodedWith
     -- * Re-exports
-  , module Ceilometer.Types
-  , module Ceilometer.Fold
-  , module Ceilometer.Infer
+  , module C
   ) where
 
 import           Control.Applicative
 import           Control.Lens
+import           Control.Monad
+import           Data.Maybe
 import qualified Data.Traversable    as T
 import           Data.Typeable
 import           Data.Word
 import           Pipes
 
+import           Ceilometer.Fold     as C
+import           Ceilometer.Infer    as C
+import           Ceilometer.Types    as C
 import           Vaultaire.Types
-import           Ceilometer.Fold
-import           Ceilometer.Infer
-import           Ceilometer.Types
+
+
+-- | Decode and fold a stream of @SimplePoint@.
+--
+--   If the assertion that these points should be type `a` is wrong: run-time error.
+--
+--   If the assertion is true but the @SourceDict@ doesn't match what we expect
+--   for the fold: `Nothing`.
+--
+--   Otherwise we get a `FoldResult` matching that type.
+--
+decodeAndFold
+  :: forall a m proxy. (Typeable a, Monad m, Applicative m)
+  => proxy a                    -- ^ We expect these @SimplePoint@ to be of type `a`
+  -> Env                        -- ^ @SourceDict@ to verify the above claim.
+  -> Producer SimplePoint m ()  -- ^ The raw data points to parse and aggregate.
+  -> m (Maybe FoldResult)       -- ^ Result
+decodeAndFold _ env points
+  = let decoded :: Maybe (Producer (Timed a) m ())
+        decoded =  useDecoding <$> decode env
+    in  fromMaybe (return Nothing) $ foldDecoded env <$> decoded
+    where useDecoding d = points >-> d >-> handleParseFails
+
+-- | Like `decodeAndFold`, but the caller does not know which type they expect.
+--
+--   Will decode and fold according to whatever the @SourceDict@ claims.
+decodeAndFold_
+  :: (Monad m, Applicative m)
+  => Env                        -- ^ @SourceDict@ to use and guess how to decode and fold.
+  -> Producer SimplePoint m ()  -- ^ The raw data points to parse and aggregate.
+  -> m (Maybe FoldResult)       -- ^ Result
+decodeAndFold_ (Env fm sd (TimeStamp s) (TimeStamp e)) points = case lookupMetricName sd of
+    Just "cpu"             -> go pCPU fCPU
+    Just "volume.size"     -> go pVolume (fVolume s e)
+    Just "instance_flavor" -> go (pInstanceFlavor fm) fInstanceFlavor
+    Just "instance_vcpu"   -> go pInstanceVCPU fInstanceVCPU
+    Just "instance_ram"    -> go pInstanceRAM fInstanceRAM
+    _ -> return Nothing
+    where go p f = Just <$> foldDecodedWith f (points >-> decodeWith (clonePrism p) >-> handleParseFails)
 
 
 -- Decode ----------------------------------------------------------------------
 
 -- | Figures out what prism to use, then decode.
---   if the inferred prism doesn't match the supplied type, there will be a
---   run-time error. (that's what you get for untyped data!)
---
-decodeChecked
-  :: (Typeable a, Monad m)
-  => proxy a
-  -> Env
-  -> Maybe (Pipe SimplePoint (Maybe (Timed a)) m ())
-decodeChecked _ = decode
-
--- | Figures out what prism to use, then decode.
 --
 decode
   :: (Typeable a, Monad m)
-  => Env
-  -> Maybe (Pipe SimplePoint (Maybe (Timed a)) m ())
+  => Env                                             -- ^ @SourceDict@ to use and guess the correct decoding
+  -> Maybe (Pipe SimplePoint (Maybe (Timed a)) m ()) -- ^ Decoding pipe
 decode env = case inferPrism env of
   Just p  -> Just $ decodeWith $ clonePrism p
   Nothing -> Nothing -- note: don't try to fmap. ImpredicativeTypes nastiness.
@@ -64,11 +98,28 @@ decode env = case inferPrism env of
 -- | Decodes the raw stream of SimplePoint using the given prism for the payload.
 decodeWith
   :: Monad m
-  => Prism' Word64 a
-  -> Pipe SimplePoint (Maybe (Timed a)) m ()
+  => Prism' Word64 a                         -- ^ Use this particular prism for decoding
+  -> Pipe SimplePoint (Maybe (Timed a)) m () -- ^ Decoding pipe
 decodeWith p = do
   SimplePoint _ (TimeStamp t) v <- await
   yield $ T.sequence $ Timed t $ v ^? p
+
+ignore :: Monad m => Pipe (Maybe x) x m r
+ignore = forever $ do
+  x <- await
+  maybe (return ()) yield x
+
+-- TODO "blow up" more gracefully, log?
+blowup :: Monad m => Pipe (Maybe x) x m r
+blowup = forever $ do
+  x <- await
+  maybe (error "fatal: unparseable point") yield x
+
+handleParseFails :: forall a m r. (Monad m, Typeable a) => Pipe (Maybe (Timed a)) (Timed a) m r
+handleParseFails = fromMaybe blowup $
+      (const ignore <$> (eqT :: Maybe (a :~: PDCPU)))
+  <|> (const blowup <$> (eqT :: Maybe (a :~: PDVolume)))
+
 
 -- Fold ------------------------------------------------------------------------
 
@@ -77,8 +128,8 @@ decodeWith p = do
 --
 foldDecoded
   :: (Typeable a, Applicative m, Monad m)
-  => Env
-  -> Producer (Timed a) m ()
+  => Env                     -- ^ @SourceDict@ to use and guess the correct decoding
+  -> Producer (Timed a) m () -- ^ Data points
   -> m (Maybe FoldResult)
 foldDecoded env points = T.sequenceA $ flip pFoldStream points <$> inferFold env
 
@@ -87,7 +138,7 @@ foldDecoded env points = T.sequenceA $ flip pFoldStream points <$> inferFold env
 --
 foldDecodedWith
   :: (Monad m)
-  => PFold (Timed a) FoldResult
-  -> Producer (Timed a) m ()
+  => PFold (Timed a) FoldResult -- ^ Use this particular fold method
+  -> Producer (Timed a) m ()    -- ^ Data points
   -> m FoldResult
 foldDecodedWith = pFoldStream

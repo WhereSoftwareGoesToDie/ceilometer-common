@@ -1,6 +1,6 @@
+import qualified Fold       as TF
+import qualified Prisms     as TP
 import           Test.Hspec
-import qualified Prisms as TP
-import qualified Fold   as TF
 
 main :: IO ()
 main = do

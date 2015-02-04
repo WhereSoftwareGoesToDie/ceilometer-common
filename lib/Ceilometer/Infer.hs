@@ -1,7 +1,10 @@
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
+
+{-# OPTIONS -fno-warn-missing-signatures #-}
 
 --
 -- Copyright © 2013-2015 Anchor Systems, Pty Ltd and Others
@@ -21,6 +24,9 @@ module Ceilometer.Infer
     inferPrism
   , inferFold
   , FoldResult(..)
+    -- * Wrappers around prisms and folds
+  , pCPU, pVolume, pInstanceVCPU, pInstanceRAM, pInstanceFlavor
+  , fCPU, fVolume, fInstanceVCPU, fInstanceRAM, fInstanceFlavor
     -- * Utilities
   , lookupEvent, lookupMetricName
   ) where
@@ -40,58 +46,63 @@ lookupEvent, lookupMetricName :: SourceDict -> Maybe Text
 lookupMetricName = lookupSource "metric_name"
 lookupEvent      = lookupSource "_event"
 
+
 inferPrism :: forall a. Typeable a => Env -> Maybe (APrism' Word64 a)
-inferPrism (Env fm sd _ _) = do
+inferPrism e = fst <$> inferPrismFold e
+
+inferFold  :: forall a. Typeable a => Env -> Maybe (PFold (Timed a) FoldResult)
+inferFold  e = snd <$> inferPrismFold e
+
+-- | Infers the schema of the raw stream from the @SourceDict@,
+--   and gives a decoding and folding method for that schema type.
+--
+inferPrismFold :: forall a. Typeable a => Env -> Maybe (APrism' Word64 a, PFold (Timed a) FoldResult)
+inferPrismFold (Env fm sd (TimeStamp s) (TimeStamp e)) = do
   name <- lookupMetricName sd
   case name of
     "cpu"             -> do Refl <- eqT :: Maybe (a :~: PDCPU)
-                            Just (prSimple . pdCPU)
+                            Just (pCPU, fCPU)
+
     "volume.size"     -> do Refl <- eqT :: Maybe (a :~: PDVolume)
-                            Just (prCompoundEvent . pdVolume)
+                            Just (pVolume, fVolume s e)
+
     "instance_flavor" -> do Refl <- eqT :: Maybe (a :~: PDInstanceFlavor)
-                            Just (prCompoundPollster . pdInstanceFlavor fm)
+                            Just (pInstanceFlavor fm, fInstanceFlavor)
+
     "instance_vcpu"   -> do Refl <- eqT :: Maybe (a :~: PDInstanceVCPU)
-                            Just (prCompoundPollster . pdInstanceVCPU)
+                            Just (pInstanceVCPU, fInstanceVCPU)
+
     "instance_ram"    -> do Refl <- eqT :: Maybe (a :~: PDInstanceRAM)
-                            Just (prCompoundPollster . pdInstanceRAM)
+                            Just (pInstanceRAM, fInstanceRAM)
 
     -- TODO what about instance_disk??? does it exist? is it disk.read/write??
 
     _ -> Nothing
 
-
--- | Infers the schema of the raw stream from the @SourceDict@,
---   and gives an aggregation method for that schema type.
---
-inferFold :: forall a. Typeable a => Env -> Maybe (PFold (Timed a) FoldResult)
-inferFold (Env _ sd (TimeStamp s) (TimeStamp e))= case (lookupMetricName sd, lookupEvent sd) of
-  (Just "disk.write.bytes", Nothing)  -> undefined
-  (Just "disk.write.bytes", Just "0") -> undefined
-  (Just "disk.write.bytes", Just "1") -> Nothing
-
-  (Just "instance_flavor", Just "0")  -> do
-    Refl <- eqT :: Maybe (a :~: PDInstanceFlavor)
-    return $ M2 <$> generalizeFold foldInstanceFlavor
-
-  (Just "instance_vcpu", Just "0")  -> do
-    Refl <- eqT :: Maybe (a :~: PDInstanceVCPU)
-    return $ M1 <$> generalizeFold foldInstanceVCPU
-
-  (Just "instance_ram", Just "0")  -> do
-    Refl <- eqT :: Maybe (a :~: PDInstanceRAM)
-    return $ M1 <$> generalizeFold foldInstanceRAM
-
-  (Just "volume.size",      Just "1") -> do
-    Refl <- eqT :: Maybe (a :~: PDVolume)
-    return $ W <$> foldVolume (s, e)
-
-  (Just "cpu",              _)        -> do
-    Refl <- eqT :: Maybe (a :~: PDCPU)
-    return $ W <$> generalizeFold (timewrapFold foldCPU)
-
-  _                                   -> Nothing
-
 -- | Universal wrapper so that clients can deal with fold results transparently
 data FoldResult = W  Word64
                 | M1 (Map PFValue32 Word64)
                 | M2 (Map PFValueText Word64)
+
+-- "Universalised" versions of prisms and folds
+
+pCPU :: APrism' Word64 PDCPU
+pCPU  = prSimple . pdCPU
+
+fCPU = W <$> generalizeFold (timewrapFold foldCPU)
+
+pVolume :: APrism' Word64 PDVolume
+pVolume     = prCompoundEvent . pdVolume
+fVolume s e = W <$> foldVolume (s,e)
+
+pInstanceFlavor :: FlavorMap -> APrism' Word64 PDInstanceFlavor
+pInstanceFlavor fm = prCompoundPollster . pdInstanceFlavor fm
+fInstanceFlavor    = M2 <$> generalizeFold foldInstanceFlavor
+
+pInstanceVCPU :: APrism' Word64 PDInstanceVCPU
+pInstanceVCPU   = prCompoundPollster . pdInstanceVCPU
+fInstanceVCPU   = M1 <$> generalizeFold foldInstanceVCPU
+
+pInstanceRAM  :: APrism' Word64 PDInstanceRAM
+pInstanceRAM    = prCompoundPollster . pdInstanceRAM
+fInstanceRAM    = M1 <$> generalizeFold foldInstanceRAM

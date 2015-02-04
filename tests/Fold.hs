@@ -1,6 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Fold where
-
-{-# OPTIONS -fno-warn-missing-signatures #-}
 
 import qualified Control.Foldl         as L
 import qualified Data.Map              as M

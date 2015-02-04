@@ -19,7 +19,6 @@ source-repository head
 library
   exposed-modules:     Ceilometer.Types
                        Ceilometer.Fold
-                       Ceilometer.Infer
                        Ceilometer.Client
 
   other-modules:       Ceilometer.Types.TH
@@ -27,6 +26,7 @@ library
                        Ceilometer.Types.CPU
                        Ceilometer.Types.Volume
                        Ceilometer.Types.Instance
+                       Ceilometer.Infer
                        Control.PFold
 
   build-depends:       base >=4.7 && < 5
