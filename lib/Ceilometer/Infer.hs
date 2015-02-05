@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs               #-}
+{-# LANGUAGE MultiWayIf          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -63,8 +64,15 @@ inferPrismFold (Env fm sd (TimeStamp s) (TimeStamp e)) = do
     "cpu"             -> do Refl <- eqT :: Maybe (a :~: PDCPU)
                             Just (pCPU, fCPU)
 
-    "volume.size"     -> do Refl <- eqT :: Maybe (a :~: PDVolume)
-                            Just (pVolume, fVolume s e)
+    "volume.size"     -> case lookupSource "volume_type" sd of
+        Nothing                -> do Refl <- eqT :: Maybe (a :~: PDVolume)
+                                     Just (pVolume, fVolume s e)
+        Just x                 -> if
+            | x == volumeTypeBlockId -> do Refl <- eqT :: Maybe (a :~: PDVolume)
+                                           Just (pVolume, fVolume s e)
+            | x == volumeTypeFastId  -> do Refl <- eqT :: Maybe (a :~: PDSSD)
+                                           Just (pSSD, fSSD s e)
+            | otherwise              -> Nothing
 
     "instance_flavor" -> do Refl <- eqT :: Maybe (a :~: PDInstanceFlavor)
                             Just (pInstanceFlavor fm, fInstanceFlavor)
@@ -87,6 +95,9 @@ pCPU = prSimple . pdCPU
 pVolume :: APrism' Word64 PDVolume
 pVolume = prCompoundEvent . pdVolume
 
+pSSD :: APrism' Word64 PDSSD
+pSSD = prCompoundEvent . pdSSD
+
 pInstanceFlavor :: FlavorMap -> APrism' Word64 PDInstanceFlavor
 pInstanceFlavor fm = prCompoundPollster . pdInstanceFlavor fm
 
@@ -98,6 +109,7 @@ pInstanceRAM = prCompoundPollster . pdInstanceRAM
 
 fCPU            = generalizeFold (timewrapFold foldCPU)
 fVolume s e     = foldVolume (s,e)
+fSSD s e        = foldSSD (s,e)
 fInstanceFlavor = generalizeFold foldInstanceFlavor
 fInstanceVCPU   = generalizeFold foldInstanceVCPU
 fInstanceRAM    = generalizeFold foldInstanceRAM

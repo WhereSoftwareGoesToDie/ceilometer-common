@@ -10,6 +10,7 @@
 -- This module defines the Ceilometer Volume type.
 --
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE TemplateHaskell    #-}
 
 module Ceilometer.Types.Volume
@@ -17,16 +18,23 @@ module Ceilometer.Types.Volume
     PFVolumeStatus(..), pfVolumeStatus
   , PFVolumeVerb(..), pfVolumeVerb
   , PDVolume(..), pdVolume
+  , PDSSD(..), pdSSD
   , volumeStatus, volumeVerb, volumeEndpoint, volumeVal
+  , volumeTypeBlockId, volumeTypeFastId
   ) where
 
 import           Control.Applicative
 import           Control.Lens
 import           Data.Binary           (Word8)
+import           Data.Text             (Text)
 import           Data.Typeable
 
 import           Ceilometer.Types.Base
 import           Ceilometer.Types.TH
+
+volumeTypeBlockId, volumeTypeFastId :: Text
+volumeTypeBlockId = "7a522201-7c27-4eaa-9d95-d70cfaaeb16a"
+volumeTypeFastId  = "f7797fba-2ce2-4d19-a607-29f4bc2acb3f"
 
 $(declarePF    "Volume"
               ("Status", ''Word8)
@@ -56,7 +64,15 @@ data PDVolume = PDVolume
   , _volumeVal      :: PFValue32 }
   deriving (Eq, Show, Read, Typeable)
 
+data PDSSD = PDSSD
+  { _ssdStatus   :: PFVolumeStatus
+  , _ssdVerb     :: PFVolumeVerb
+  , _ssdEndpoint :: PFEndpoint
+  , _ssdVal      :: PFValue32 }
+  deriving (Eq, Show, Read, Typeable)
+
 $(makeLenses ''PDVolume)
+$(makeLenses ''PDSSD)
 
 pdVolume :: Prism' PRCompoundEvent PDVolume
 pdVolume = prism' pretty parse
@@ -67,6 +83,21 @@ pdVolume = prism' pretty parse
           <*> (raw ^? eventEndpoint . pfEndpoint)
           <*> (raw ^? eventVal )
         pretty (PDVolume status verb ep val)
+          = PRCompoundEvent
+            val
+            (ep     ^. re pfEndpoint)
+            (verb   ^. re pfVolumeVerb)
+            (status ^. re pfVolumeStatus)
+
+pdSSD :: Prism' PRCompoundEvent PDSSD
+pdSSD = prism' pretty parse
+  where parse raw
+          =   PDSSD
+          <$> (raw ^? eventStatus   . pfVolumeStatus)
+          <*> (raw ^? eventVerb     . pfVolumeVerb)
+          <*> (raw ^? eventEndpoint . pfEndpoint)
+          <*> (raw ^? eventVal )
+        pretty (PDSSD status verb ep val)
           = PRCompoundEvent
             val
             (ep     ^. re pfEndpoint)
