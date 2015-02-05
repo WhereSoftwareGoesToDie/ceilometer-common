@@ -32,6 +32,7 @@ suite = do
 
   describe "CHECK: prism for DECODED PAYLOAD: " $ do
     prop "VOLUME   - is a proper prism" $ isPrism pdVolume
+    prop "SSD      - is a proper prism" $ isPrism pdSSD
     prop "CPU      - is a proper prism" $ isPrism pdCPU
     prop "VCPU     - is a proper prism" $ isPrism pdInstanceVCPU
     prop "RAM      - is a proper prism" $ isPrism pdInstanceRAM
@@ -42,6 +43,9 @@ suite = do
   describe "REFINE: prism:" $ do
     it "parses/prints values correct to spec for: VOLUME" $
       shouldAllBe (preview pdVolume . view prCompoundEvent) volumePRs volumePDs
+
+    it "parses/prints values correct to spec for: SSD" $
+      shouldAllBe (preview pdSSD . view prCompoundEvent) ssdPRs ssdPDs
 
     it "parses/prints values correct to spec for: INSTANCE FLAVOR" $
       shouldAllBe (preview (pdInstanceFlavor testFlavors) . view prCompoundPollster) flavorPRs flavorPDs

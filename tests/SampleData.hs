@@ -29,6 +29,7 @@ instance Function PFVolumeStatus   where function = functionShow
 instance Function PFVolumeVerb     where function = functionShow
 instance Function PDCPU            where function = functionShow
 instance Function PDVolume         where function = functionShow
+instance Function PDSSD            where function = functionShow
 instance Function PDInstanceVCPU   where function = functionShow
 instance Function PDInstanceRAM    where function = functionShow
 instance Function PDInstanceDisk   where function = functionShow
@@ -59,6 +60,11 @@ instance Arbitrary PDVolume   where arbitrary =   PDVolume
                                             <*> arbitrary
                                             <*> arbitrary
                                             <*> arbitrary
+instance Arbitrary PDSSD      where arbitrary =   PDSSD
+                                            <$> arbitrary
+                                            <*> arbitrary
+                                            <*> arbitrary
+                                            <*> arbitrary
 instance Arbitrary PDInstanceVCPU   where arbitrary =   PDInstanceVCPU
                                                   <$> arbitrary
                                                   <*> arbitrary
@@ -80,11 +86,13 @@ instance CoArbitrary PDCPU          where
   coarbitrary x = variant $ x ^. re pdCPU    . re prSimple
 instance CoArbitrary PDVolume       where
   coarbitrary x = variant $ x ^. re pdVolume . re prCompoundEvent
+instance CoArbitrary PDSSD          where
+  coarbitrary x = variant $ x ^. re pdSSD    . re prCompoundEvent
 instance CoArbitrary PDInstanceFlavor where
   coarbitrary x = variant $ x ^. re (pdInstanceFlavor testFlavors) . re prCompoundPollster
 instance CoArbitrary PDInstanceVCPU where
   coarbitrary x = variant $ x ^. re pdInstanceVCPU . re prCompoundPollster
-instance CoArbitrary PDInstanceRAM where
+instance CoArbitrary PDInstanceRAM  where
   coarbitrary x = variant $ x ^. re pdInstanceRAM . re prCompoundPollster
 instance CoArbitrary PDInstanceDisk where
   coarbitrary x = variant $ x ^. re pdInstanceDisk . re prCompoundPollster
@@ -151,6 +159,7 @@ volumeNonDelete = (arbitrary :: Gen PDVolume) `suchThat` ((/= VolumeDelete) . vi
 
 -- Raw payloads for volume points
 volumePRs = [volumePR0, volumePR1, volumePR2 ]
+ssdPRs = volumePRs
 
 volumePR0, volumePR1, volumePR2 :: Word64
 volumePR0 = 2 + (1 `shift` 8) + (2 `shift` 16) + (10 `shift` 32)
@@ -165,12 +174,26 @@ volumePD0 = PDVolume VolumeCreating VolumeCreate End 10
 volumePD1 = PDVolume VolumeCreating VolumeCreate End 30
 volumePD2 = PDVolume VolumeDeleting VolumeDelete End 30
 
+ssdPDs = [ssdPD0, ssdPD1, ssdPD2 ]
+
+ssdPD0, ssdPD1, ssdPD2 :: PDSSD
+ssdPD0 = PDSSD VolumeCreating VolumeCreate End 10
+ssdPD1 = PDSSD VolumeCreating VolumeCreate End 30
+ssdPD2 = PDSSD VolumeDeleting VolumeDelete End 30
+
 volumeTimedPDs :: [Timed PDVolume]
 volumeTimedPDs = [ Timed testS        volumePD0
                  , Timed (testS + 2)  volumePD1
                  , Timed (testS + 7)  volumePD1
                  , Timed (testS + 11) volumePD0
                  , Timed (testS + 21) volumePD2 ]
+
+ssdTimedPDs :: [Timed PDSSD]
+ssdTimedPDs = [ Timed testS        ssdPD0
+              , Timed (testS + 2)  ssdPD1
+              , Timed (testS + 7)  ssdPD1
+              , Timed (testS + 11) ssdPD0
+              , Timed (testS + 21) ssdPD2 ]
 
 -- Volume events
 -- Expected = 2 * 10 + 5 * 30 + 4 * 30 + 10 * 10
@@ -180,3 +203,6 @@ volumeTimedPDs = [ Timed testS        volumePD0
 --
 volumeTimedPDsResult :: Word64
 volumeTimedPDsResult = 390
+
+ssdTimedPDsResult :: Word64
+ssdTimedPDsResult = volumeTimedPDsResult

@@ -30,6 +30,10 @@ suite = do
     it "ok for example payload"
       $ pFold foldVolumeAll volumeTimedPDs `shouldBe` volumeTimedPDsResult
 
+  describe "Folding points for EVENT resource: SSD" $
+    it "ok for example payload"
+      $ pFold foldSSDAll ssdTimedPDs `shouldBe` ssdTimedPDsResult
+
   -- "Pollster" resources
   describe "Folding points for POLLSTER resource: INSTANCE FLAVOR" $
     it "ok for example payload"
@@ -46,3 +50,4 @@ suite = do
       return $ pFold foldVolumeAll xs0 == pFold foldVolumeAll xs1
 
   where foldVolumeAll = foldVolume (testS, testE)
+        foldSSDAll    = foldSSD    (testS, testE)
