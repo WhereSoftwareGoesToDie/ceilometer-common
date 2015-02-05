@@ -23,6 +23,7 @@ module Ceilometer.Fold
   ( -- * Resource-specific Folds
     foldCPU
   , foldVolume
+  , foldSSD
   , foldInstanceFlavor
   , foldInstanceVCPU
   , foldInstanceRAM
@@ -48,6 +49,7 @@ import           Control.PFold
 type family FoldResult x where
   FoldResult PDCPU            = Word64
   FoldResult PDVolume         = Word64
+  FoldResult PDSSD            = Word64
   FoldResult PDInstanceVCPU   = Map PFValue32 Word64
   FoldResult PDInstanceRAM    = Map PFValue32 Word64
   FoldResult PDInstanceDisk   = Map PFValue32 Word64
@@ -62,6 +64,17 @@ foldVolume :: Window -> PFold (Timed PDVolume) (FoldResult PDVolume)
 foldVolume window = PFold step bEvent (eEvent window)
   where -- Stop folding as soon as the volume is deleted
         step (More (prev,acc)) (Timed end (PDVolume _ VolumeDelete _ _))
+          = Term (Nothing, go end acc prev)
+        step a x = sEvent window a x
+
+        -- Adds the duration up until volume delete
+        go end acc (Just x) = M.insertWith (+) (x ^. value) (end - x ^. time) acc
+        go _   acc  Nothing = acc
+
+foldSSD :: Window -> PFold (Timed PDSSD) (FoldResult PDSSD)
+foldSSD window = PFold step bEvent (eEvent window)
+  where -- Stop folding as soon as the volume is deleted
+        step (More (prev,acc)) (Timed end (PDSSD _ VolumeDelete _ _))
           = Term (Nothing, go end acc prev)
         step a x = sEvent window a x
 

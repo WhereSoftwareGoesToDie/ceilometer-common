@@ -35,11 +35,16 @@ module Ceilometer.Types
 
     -- * Payload Decoded Points
   , PDVolume(PDVolume), pdVolume
+  , PDSSD(PDSSD), pdSSD
   , PDCPU(PDCPU), pdCPU
   , PDInstanceVCPU(PDInstanceVCPU), pdInstanceVCPU
   , PDInstanceRAM(PDInstanceRAM), pdInstanceRAM
   , PDInstanceDisk(PDInstanceDisk), pdInstanceDisk
   , PDInstanceFlavor(PDInstanceFlavor), pdInstanceFlavor
+
+    -- * Extra Volume Related Values and Helpers
+  , volumeTypeBlockId, volumeTypeFastId
+  , lookupVolumeType, sourceIsBlock, sourceIsFast
 
     -- * Values
   , Valued, value
@@ -90,6 +95,10 @@ instance Valued PDCPU      where
 instance Valued PDVolume   where
   type PFValue PDVolume      = PFValue32
   value f (PDVolume a b c x) = PDVolume a b c <$> f x
+
+instance Valued PDSSD   where
+  type PFValue PDSSD      = PFValue32
+  value f (PDSSD a b c x) = PDSSD a b c <$> f x
 
 instance Valued PDInstanceFlavor where
   type PFValue PDInstanceFlavor  = PFValueText
