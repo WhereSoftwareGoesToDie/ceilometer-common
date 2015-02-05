@@ -63,7 +63,9 @@ $(declarePF    "Volume"
             , ("Deleting",  4)
             , ("Attaching", 5)
             , ("Detaching", 6)
-            , ("InUse",     7) ]
+            , ("InUse",     7)
+            , ("Retyping",  8)
+            , ("Uploading", 9) ]
             [ ''Show, ''Read, ''Eq, ''Bounded, ''Enum ])
 
 $(declarePF    "Volume"
@@ -71,8 +73,9 @@ $(declarePF    "Volume"
             [ ("Create", 1)
             , ("Resize", 2)
             , ("Delete", 3)
-            , ("Attach", 5)
-            , ("Detach", 6) ]
+            , ("Attach", 4)
+            , ("Detach", 5)
+            , ("Update", 6) ]
             [ ''Show, ''Read, ''Eq, ''Bounded, ''Enum ])
 
 data PDVolume = PDVolume
