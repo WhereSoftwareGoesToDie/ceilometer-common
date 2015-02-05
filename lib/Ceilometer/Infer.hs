@@ -61,27 +61,24 @@ inferPrismFold :: forall a. Typeable a
 inferPrismFold (Env fm sd (TimeStamp s) (TimeStamp e)) = do
   name <- lookupMetricName sd
   case name of
-    "cpu"             -> do Refl <- eqT :: Maybe (a :~: PDCPU)
-                            Just (pCPU, fCPU)
+    "cpu"                -> do Refl <- eqT :: Maybe (a :~: PDCPU)
+                               Just (pCPU, fCPU)
 
-    "volume.size"     -> case lookupSource "volume_type" sd of
-        Nothing                -> do Refl <- eqT :: Maybe (a :~: PDVolume)
-                                     Just (pVolume, fVolume s e)
-        Just x                 -> if
-            | x == volumeTypeBlockId -> do Refl <- eqT :: Maybe (a :~: PDVolume)
-                                           Just (pVolume, fVolume s e)
-            | x == volumeTypeFastId  -> do Refl <- eqT :: Maybe (a :~: PDSSD)
-                                           Just (pSSD, fSSD s e)
-            | otherwise              -> Nothing
+    "volume.size" -> if
+      | sourceIsBlock sd -> do Refl <- eqT :: Maybe (a :~: PDVolume)
+                               Just (pVolume, fVolume s e)
+      | sourceIsFast  sd -> do Refl <- eqT :: Maybe (a :~: PDSSD)
+                               Just (pSSD, fSSD s e)
+      | otherwise        ->    Nothing
 
-    "instance_flavor" -> do Refl <- eqT :: Maybe (a :~: PDInstanceFlavor)
-                            Just (pInstanceFlavor fm, fInstanceFlavor)
+    "instance_flavor"    -> do Refl <- eqT :: Maybe (a :~: PDInstanceFlavor)
+                               Just (pInstanceFlavor fm, fInstanceFlavor)
 
-    "instance_vcpu"   -> do Refl <- eqT :: Maybe (a :~: PDInstanceVCPU)
-                            Just (pInstanceVCPU, fInstanceVCPU)
+    "instance_vcpu"      -> do Refl <- eqT :: Maybe (a :~: PDInstanceVCPU)
+                               Just (pInstanceVCPU, fInstanceVCPU)
 
-    "instance_ram"    -> do Refl <- eqT :: Maybe (a :~: PDInstanceRAM)
-                            Just (pInstanceRAM, fInstanceRAM)
+    "instance_ram"       -> do Refl <- eqT :: Maybe (a :~: PDInstanceRAM)
+                               Just (pInstanceRAM, fInstanceRAM)
 
     -- TODO what about instance_disk??? does it exist? is it disk.read/write??
 

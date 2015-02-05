@@ -10,6 +10,7 @@
 -- This module defines the Ceilometer Volume type.
 --
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE MultiWayIf         #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE TemplateHaskell    #-}
 
@@ -21,6 +22,7 @@ module Ceilometer.Types.Volume
   , PDSSD(..), pdSSD
   , volumeStatus, volumeVerb, volumeEndpoint, volumeVal
   , volumeTypeBlockId, volumeTypeFastId
+  , lookupVolumeType, sourceIsBlock, sourceIsFast
   ) where
 
 import           Control.Applicative
@@ -31,10 +33,26 @@ import           Data.Typeable
 
 import           Ceilometer.Types.Base
 import           Ceilometer.Types.TH
+import           Vaultaire.Types
 
 volumeTypeBlockId, volumeTypeFastId :: Text
 volumeTypeBlockId = "7a522201-7c27-4eaa-9d95-d70cfaaeb16a"
 volumeTypeFastId  = "f7797fba-2ce2-4d19-a607-29f4bc2acb3f"
+
+lookupVolumeType :: SourceDict -> Maybe Text
+lookupVolumeType = lookupSource "volume_type"
+
+sourceIsBlock, sourceIsFast :: SourceDict -> Bool
+sourceIsBlock sd = case lookupVolumeType sd of
+  Nothing                      -> True
+  Just x  -> if
+    | x == volumeTypeBlockId -> True
+    | otherwise              -> False
+sourceIsFast  sd = case lookupVolumeType sd of
+  Nothing                      -> False
+  Just x -> if
+    | x == volumeTypeFastId  -> True
+    | otherwise              -> False
 
 $(declarePF    "Volume"
               ("Status", ''Word8)
