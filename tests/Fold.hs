@@ -19,7 +19,7 @@ suite = do
     it "ok for monotonically decreasing points"
       $ L.fold foldCPU cpuDecreasing `shouldBe` cpuDecreasingResult
 
-    it "ok for monotonically inreasing points"
+    it "ok for monotonically increasing points"
       $ L.fold foldCPU cpuIncreasing `shouldBe` cpuIncreasingResult
 
     it "ok for non-monotonic points"
@@ -34,11 +34,14 @@ suite = do
     it "ok for example payload"
       $ pFold foldSSDAll ssdTimedPDs `shouldBe` ssdTimedPDsResult
 
+  describe "Folding points for EVENT resource: IMAGE" $
+    it "ok for example payload"
+      $ pFold foldImageAll imageTimedPDs `shouldBe` imageTimedPDsResult
+
   -- "Pollster" resources
   describe "Folding points for POLLSTER resource: INSTANCE FLAVOR" $
     it "ok for example payload"
       $ L.fold foldInstanceFlavor flavorTimedPDs `shouldBe` M.fromList flavorTimedPDsResult
-
 
   describe "Folding points on edge cases:" $
     prop "discards the rest after VOLUME DELETE" $ property $ do
@@ -51,3 +54,4 @@ suite = do
 
   where foldVolumeAll = foldVolume (testS, testE)
         foldSSDAll    = foldSSD    (testS, testE)
+        foldImageAll  = foldImage  (testS, testE)

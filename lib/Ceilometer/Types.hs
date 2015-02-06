@@ -31,6 +31,8 @@ module Ceilometer.Types
   , PFVolumeStatus(..), pfVolumeStatus
   , PFVolumeVerb(..), pfVolumeVerb
   , PFInstanceStatus(..), pfInstanceStatus
+  , PFImageStatus(..), pfImageStatus
+  , PFImageVerb(..), pfImageVerb
 
     -- * Payload Decoded Points
   , PDVolume(PDVolume), pdVolume
@@ -40,6 +42,8 @@ module Ceilometer.Types
   , PDInstanceRAM(PDInstanceRAM), pdInstanceRAM
   , PDInstanceDisk(PDInstanceDisk), pdInstanceDisk
   , PDInstanceFlavor(PDInstanceFlavor), pdInstanceFlavor
+  , PDImage(PDImage), pdImage
+  , PDImageP(PDImageP), pdImageP
 
     -- * Values
   , Valued, value
@@ -57,6 +61,7 @@ import           Data.Foldable
 
 import           Ceilometer.Types.Base
 import           Ceilometer.Types.CPU
+import           Ceilometer.Types.Image
 import           Ceilometer.Types.Instance
 import           Ceilometer.Types.Volume
 import           Control.PFold
@@ -123,3 +128,11 @@ instance Valued PDInstanceRAM where
 instance Valued PDInstanceDisk where
   type PFValue PDInstanceDisk  = PFValue32
   value f (PDInstanceDisk s x) = PDInstanceDisk s <$> f x
+
+instance Valued PDImage where
+  type PFValue PDImage  = PFValue32
+  value f (PDImage s v x) = PDImage s v <$> f x
+
+instance Valued PDImageP where
+  type PFValue PDImageP = PFValue64
+  value f (PDImageP x) = PDImageP <$> f x
