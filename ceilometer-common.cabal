@@ -25,6 +25,7 @@ library
                        Ceilometer.Types.Base
                        Ceilometer.Types.CPU
                        Ceilometer.Types.Volume
+                       Ceilometer.Types.Image
                        Ceilometer.Types.Instance
                        Ceilometer.Infer
                        Control.PFold
