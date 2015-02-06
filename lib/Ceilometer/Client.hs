@@ -53,6 +53,8 @@ import           Vaultaire.Types
 --
 --   Otherwise we get a `FoldResult` matching that type.
 --
+--   Example usage: `decodeAndFold (undefined :: proxy PDCPU) env points`
+--
 decodeAndFold
   :: forall a m proxy. (Typeable a, Monad m, Applicative m)
   => proxy a                    -- ^ We expect these @SimplePoint@ to be of type `a`

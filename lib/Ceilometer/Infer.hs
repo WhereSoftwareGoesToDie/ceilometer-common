@@ -36,14 +36,14 @@ import           Data.Text           (Text)
 import           Data.Typeable
 import           Data.Word
 
+import           Ceilometer.Tags
 import           Ceilometer.Fold
 import           Ceilometer.Types
 import           Vaultaire.Types
 
 lookupEvent, lookupMetricName :: SourceDict -> Maybe Text
-lookupMetricName = lookupSource "metric_name"
-lookupEvent      = lookupSource "_event"
-
+lookupMetricName = lookupSource keyMetricName
+lookupEvent      = lookupSource keyEvent
 
 inferPrism :: forall a. Typeable a
            => Env -> Maybe (APrism' Word64 a)
