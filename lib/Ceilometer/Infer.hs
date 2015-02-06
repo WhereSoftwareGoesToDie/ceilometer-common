@@ -26,8 +26,6 @@ module Ceilometer.Infer
     inferPrism
   , inferFold
   , FoldResult
-    -- * Utilities
-  , lookupEvent, lookupMetricName
   ) where
 
 import           Control.Applicative
@@ -39,11 +37,8 @@ import           Data.Word
 import           Ceilometer.Tags
 import           Ceilometer.Fold
 import           Ceilometer.Types
+import           Ceilometer.Tags
 import           Vaultaire.Types
-
-lookupEvent, lookupMetricName :: SourceDict -> Maybe Text
-lookupMetricName = lookupSource keyMetricName
-lookupEvent      = lookupSource keyEvent
 
 inferPrism :: forall a. Typeable a
            => Env -> Maybe (APrism' Word64 a)

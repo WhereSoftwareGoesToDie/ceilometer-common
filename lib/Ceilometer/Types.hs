@@ -42,10 +42,6 @@ module Ceilometer.Types
   , PDInstanceDisk(PDInstanceDisk), pdInstanceDisk
   , PDInstanceFlavor(PDInstanceFlavor), pdInstanceFlavor
 
-    -- * Extra Volume Related Values and Helpers
-  , volumeTypeBlockId, volumeTypeFastId
-  , lookupVolumeType, sourceIsBlock, sourceIsFast
-
     -- * Values
   , Valued, value
   , Timed(Timed), time
