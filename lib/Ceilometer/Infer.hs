@@ -88,8 +88,8 @@ inferPrismFold (Env fm sd (TimeStamp s) (TimeStamp e)) = do
         Just (pImage, fImage s e)
 
      | name == valImage && not (isEvent sd) -> do
-        Refl <- eqT :: Maybe (a :~: PDImageP)
-        Just (pImageP, fImageP)
+        Refl <- eqT :: Maybe (a :~: PDImagePollster)
+        Just (pImagePollster, fImagePollster)
 
      | name == valSnapshot -> do
         Refl <- eqT :: Maybe (a :~: PDSnapshot)
@@ -127,8 +127,8 @@ pInstanceDisk = prCompoundPollster . pdInstanceDisk
 pImage :: APrism' Word64 PDImage
 pImage = prCompoundEvent . pdImage
 
-pImageP :: APrism' Word64 PDImageP
-pImageP = prSimple . pdImageP
+pImagePollster :: APrism' Word64 PDImagePollster
+pImagePollster = prSimple . pdImagePollster
 
 pSnapshot :: APrism' Word64 PDSnapshot
 pSnapshot = prCompoundEvent . pdSnapshot
@@ -144,6 +144,6 @@ fInstanceVCPU   = generalizeFold foldInstanceVCPU
 fInstanceRAM    = generalizeFold foldInstanceRAM
 fInstanceDisk   = generalizeFold foldInstanceDisk
 fImage s e      = foldImage (s,e)
-fImageP         = generalizeFold foldImageP
+fImagePollster  = generalizeFold foldImagePollster
 fSnapshot s e   = foldSnapshot (s,e)
 fIP       s e   = generalizeFold $ foldIP (s,e)
