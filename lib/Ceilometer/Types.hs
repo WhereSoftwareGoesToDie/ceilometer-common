@@ -49,7 +49,7 @@ module Ceilometer.Types
   , PDInstanceDisk(PDInstanceDisk), pdInstanceDisk
   , PDInstanceFlavor(PDInstanceFlavor), pdInstanceFlavor
   , PDImage(PDImage), pdImage
-  , PDImageP(PDImageP), pdImageP
+  , PDImagePollster(PDImagePollster), pdImagePollster
   , PDSnapshot(PDSnapshot), pdSnapshot
   , PDIP(PDIP), pdIP
 
@@ -130,9 +130,9 @@ instance Valued PDImage          where
   type PFValue PDImage           = PFValue32
   value f (PDImage s v x)        = PDImage s v <$> f x
 
-instance Valued PDImageP         where
-  type PFValue PDImageP          = PFValue64
-  value f (PDImageP x)           = PDImageP <$> f x
+instance Valued PDImagePollster  where
+  type PFValue PDImagePollster   = PFValue64
+  value f (PDImagePollster x)    = PDImagePollster <$> f x
 
 instance Valued PDSnapshot       where
   type PFValue PDSnapshot        = PFValue32

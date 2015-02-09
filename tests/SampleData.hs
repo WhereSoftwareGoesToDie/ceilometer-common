@@ -43,7 +43,7 @@ instance Function PDCPU            where function = functionShow
 instance Function PDVolume         where function = functionShow
 instance Function PDSSD            where function = functionShow
 instance Function PDImage          where function = functionShow
-instance Function PDImageP         where function = functionShow
+instance Function PDImagePollster  where function = functionShow
 instance Function PDIP             where function = functionShow
 instance Function PDSnapshot       where function = functionShow
 instance Function PDInstanceVCPU   where function = functionShow
@@ -104,7 +104,7 @@ instance Arbitrary PDImage          where arbitrary =   PDImage
                                                   <$> arbitrary
                                                   <*> arbitrary
                                                   <*> arbitrary
-instance Arbitrary PDImageP         where arbitrary =   PDImageP <$> arbitrary
+instance Arbitrary PDImagePollster  where arbitrary =   PDImagePollster <$> arbitrary
 instance Arbitrary PDSnapshot       where arbitrary =   PDSnapshot
                                                   <$> arbitrary
                                                   <*> arbitrary
@@ -134,8 +134,8 @@ instance CoArbitrary PDSSD            where
   coarbitrary x = variant $ x ^. re pdSSD      . re prCompoundEvent
 instance CoArbitrary PDImage          where
   coarbitrary x = variant $ x ^. re pdImage    . re prCompoundEvent
-instance CoArbitrary PDImageP         where
-  coarbitrary x = variant $ x ^. re pdImageP   . re prSimple
+instance CoArbitrary PDImagePollster  where
+  coarbitrary x = variant $ x ^. re pdImagePollster   . re prSimple
 instance CoArbitrary PDSnapshot       where
   coarbitrary x = variant $ x ^. re pdSnapshot . re prCompoundEvent
 instance CoArbitrary PDIP             where
@@ -305,12 +305,12 @@ imageTimedPDsResult = M.fromList [ (200000, 16)
                                  , (400000, 16)
                                  ]
 
-imagePPD0, imagePPD1, imagePPD2 :: PDImageP
-imagePPD0 = PDImageP 200000
-imagePPD1 = PDImageP 400000
-imagePPD2 = PDImageP 100000
+imagePPD0, imagePPD1, imagePPD2 :: PDImagePollster
+imagePPD0 = PDImagePollster 200000
+imagePPD1 = PDImagePollster 400000
+imagePPD2 = PDImagePollster 100000
 
-imagePTimedPDs :: [Timed PDImageP]
+imagePTimedPDs :: [Timed PDImagePollster]
 imagePTimedPDs = [ Timed testS        imagePPD0
                  , Timed (testS + 5)  imagePPD1
                  , Timed (testS + 12) imagePPD2

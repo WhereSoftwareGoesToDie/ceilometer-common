@@ -25,7 +25,7 @@ module Ceilometer.Fold
   , foldVolume
   , foldSSD
   , foldImage
-  , foldImageP
+  , foldImagePollster
   , foldInstanceFlavor
   , foldInstanceVCPU
   , foldInstanceRAM
@@ -54,7 +54,7 @@ type family FoldResult x where
   FoldResult PDCPU            = Word64
   FoldResult PDVolume         = Map PFValue32 Word64
   FoldResult PDImage          = Map PFValue32 Word64
-  FoldResult PDImageP         = Map PFValue64 Word64
+  FoldResult PDImagePollster  = Map PFValue64 Word64
   FoldResult PDIP             = Map PFIPAlloc Word64
   FoldResult PDSSD            = Map PFValue32 Word64
   FoldResult PDInstanceVCPU   = Map PFValue32 Word64
@@ -124,8 +124,8 @@ foldInstanceRAM    =  L.Fold sGaugePollster bGaugePollster snd
 foldInstanceDisk   :: L.Fold (Timed PDInstanceDisk) (FoldResult PDInstanceDisk)
 foldInstanceDisk   =  L.Fold sGaugePollster bGaugePollster snd
 
-foldImageP   :: L.Fold (Timed PDImageP) (FoldResult PDImageP)
-foldImageP   =  L.Fold sGaugePollster bGaugePollster snd
+foldImagePollster  :: L.Fold (Timed PDImagePollster) (FoldResult PDImagePollster)
+foldImagePollster  =  L.Fold sGaugePollster bGaugePollster snd
 
 foldIP :: Window ->  L.Fold (Timed PDIP) (FoldResult PDIP)
 foldIP window = L.Fold (sEvent window) bEvent (eEvent window)

@@ -49,7 +49,7 @@ suite = do
 
   describe "Folding points for POLLSTER resource: IMAGE POLLSTER" $
     it "ok for example payload"
-      $ L.fold foldImageP imagePTimedPDs `shouldBe` imagePTimedPDsResult
+      $ L.fold foldImagePollster imagePTimedPDs `shouldBe` imagePTimedPDsResult
 
   describe "Folding points on edge cases:" $
     prop "discards the rest after VOLUME DELETE" $ property $ do
