@@ -83,16 +83,21 @@ inferPrismFold (Env fm sd (TimeStamp s) (TimeStamp e)) = do
         Refl <- eqT :: Maybe (a :~: PDInstanceDisk)
         Just (pInstanceDisk, fInstanceDisk)
 
-     | name == valImage -> if isEvent sd then do
+     | name == valImage && isEvent sd -> do
         Refl <- eqT :: Maybe (a :~: PDImage)
-        Just (pImage, fImage s e)  
-                           else do
+        Just (pImage, fImage s e)
+
+     | name == valImage && not (isEvent sd) -> do
         Refl <- eqT :: Maybe (a :~: PDImageP)
         Just (pImageP, fImageP)
 
      | name == valSnapshot -> do
         Refl <- eqT :: Maybe (a :~: PDSnapshot)
         Just (pSnapshot, fSnapshot s e)
+
+     | name == valIP -> do
+        Refl <- eqT :: Maybe (a :~: PDIP)
+        Just (pIP, fIP s e)
 
      | otherwise -> Nothing
 
@@ -128,6 +133,9 @@ pImageP = prSimple . pdImageP
 pSnapshot :: APrism' Word64 PDSnapshot
 pSnapshot = prCompoundEvent . pdSnapshot
 
+pIP :: APrism' Word64 PDIP
+pIP = prCompoundEvent . pdIP
+
 fCPU            = generalizeFold (timewrapFold foldCPU)
 fVolume s e     = foldVolume (s,e)
 fSSD s e        = foldSSD (s,e)
@@ -138,3 +146,4 @@ fInstanceDisk   = generalizeFold foldInstanceDisk
 fImage s e      = foldImage (s,e)
 fImageP         = generalizeFold foldImageP
 fSnapshot s e   = foldSnapshot (s,e)
+fIP       s e   = generalizeFold $ foldIP (s,e)

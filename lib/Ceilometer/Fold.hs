@@ -30,6 +30,7 @@ module Ceilometer.Fold
   , foldInstanceVCPU
   , foldInstanceRAM
   , foldInstanceDisk
+  , foldIP
   , foldSnapshot
     -- * Utilities
   , FoldResult
@@ -54,6 +55,7 @@ type family FoldResult x where
   FoldResult PDVolume         = Map PFValue32 Word64
   FoldResult PDImage          = Map PFValue32 Word64
   FoldResult PDImageP         = Map PFValue64 Word64
+  FoldResult PDIP             = Map PFIPAlloc Word64
   FoldResult PDSSD            = Map PFValue32 Word64
   FoldResult PDInstanceVCPU   = Map PFValue32 Word64
   FoldResult PDInstanceRAM    = Map PFValue32 Word64
@@ -125,6 +127,9 @@ foldInstanceDisk   =  L.Fold sGaugePollster bGaugePollster snd
 foldImageP   :: L.Fold (Timed PDImageP) (FoldResult PDImageP)
 foldImageP   =  L.Fold sGaugePollster bGaugePollster snd
 
+foldIP :: Window ->  L.Fold (Timed PDIP) (FoldResult PDIP)
+foldIP window = L.Fold (sEvent window) bEvent (eEvent window)
+
 -- Utilities -------------------------------------------------------------------
 
 -- | Wrap a fold that doens't depend on time with dummy times.
@@ -170,7 +175,7 @@ eCumulative (Just (first, latest), acc) = acc + latest - first
 eCumulative (_, acc)                    = acc
 
 type AGaugePollster x = ( Maybe (Timed x)          -- latest
-                   , Map (PFValue x) Word64 ) -- accumulated map
+                        , Map (PFValue x) Word64 ) -- accumulated map
 
 -- | Finds the length of time allocated to each "state" of the resource.
 --   e.g. time a @Volume@ spent at 10GB, then at 20GB (if resized), etc.

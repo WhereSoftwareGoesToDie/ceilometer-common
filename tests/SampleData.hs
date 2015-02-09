@@ -23,6 +23,7 @@ import           Test.QuickCheck.Function
 import           Ceilometer.Types
 import           Ceilometer.Types.Image    (imageVerb)
 import           Ceilometer.Types.Instance (siphashID)
+import           Ceilometer.Types.IP       (ipVerb)
 import           Ceilometer.Types.Snapshot (snapshotVerb)
 import           Ceilometer.Types.Volume   (volumeVerb)
 
@@ -36,11 +37,14 @@ instance Function PFImageStatus    where function = functionShow
 instance Function PFImageVerb      where function = functionShow
 instance Function PFSnapshotStatus where function = functionShow
 instance Function PFSnapshotVerb   where function = functionShow
+instance Function PFIPStatus       where function = functionShow
+instance Function PFIPVerb         where function = functionShow
 instance Function PDCPU            where function = functionShow
 instance Function PDVolume         where function = functionShow
 instance Function PDSSD            where function = functionShow
 instance Function PDImage          where function = functionShow
 instance Function PDImageP         where function = functionShow
+instance Function PDIP             where function = functionShow
 instance Function PDSnapshot       where function = functionShow
 instance Function PDInstanceVCPU   where function = functionShow
 instance Function PDInstanceRAM    where function = functionShow
@@ -68,7 +72,9 @@ instance Arbitrary PFImageVerb      where arbitrary = arbitraryBoundedEnum
 instance Arbitrary PFImageStatus    where arbitrary = arbitraryBoundedEnum
 instance Arbitrary PFSnapshotVerb   where arbitrary = arbitraryBoundedEnum
 instance Arbitrary PFSnapshotStatus where arbitrary = arbitraryBoundedEnum
-
+instance Arbitrary PFIPVerb         where arbitrary = arbitraryBoundedEnum
+instance Arbitrary PFIPStatus       where arbitrary = arbitraryBoundedEnum
+instance Arbitrary PFIPAlloc        where arbitrary = arbitraryBoundedEnum
 instance Arbitrary PFValueText      where arbitrary = elements $ BM.keys testFlavors
 
 instance Arbitrary PDCPU            where arbitrary =   PDCPU <$> arbitrary
@@ -104,6 +110,11 @@ instance Arbitrary PDSnapshot       where arbitrary =   PDSnapshot
                                                   <*> arbitrary
                                                   <*> arbitrary
                                                   <*> arbitrary
+instance Arbitrary PDIP             where arbitrary =   PDIP
+                                                  <$> arbitrary
+                                                  <*> arbitrary
+                                                  <*> arbitrary
+                                                  <*> arbitrary
 
 instance CoArbitrary PFEndpoint       where coarbitrary = variant . fromEnum
 instance CoArbitrary PFVolumeStatus   where coarbitrary = variant . fromEnum
@@ -112,6 +123,8 @@ instance CoArbitrary PFImageVerb      where coarbitrary = variant . fromEnum
 instance CoArbitrary PFImageStatus    where coarbitrary = variant . fromEnum
 instance CoArbitrary PFSnapshotVerb   where coarbitrary = variant . fromEnum
 instance CoArbitrary PFSnapshotStatus where coarbitrary = variant . fromEnum
+instance CoArbitrary PFIPVerb         where coarbitrary = variant . fromEnum
+instance CoArbitrary PFIPStatus       where coarbitrary = variant . fromEnum
 
 instance CoArbitrary PDCPU            where
   coarbitrary x = variant $ x ^. re pdCPU      . re prSimple
@@ -125,6 +138,8 @@ instance CoArbitrary PDImageP         where
   coarbitrary x = variant $ x ^. re pdImageP   . re prSimple
 instance CoArbitrary PDSnapshot       where
   coarbitrary x = variant $ x ^. re pdSnapshot . re prCompoundEvent
+instance CoArbitrary PDIP             where
+  coarbitrary x = variant $ x ^. re pdIP       . re prCompoundEvent
 instance CoArbitrary PDInstanceFlavor where
   coarbitrary x = variant $ x ^. re (pdInstanceFlavor testFlavors) . re prCompoundPollster
 instance CoArbitrary PDInstanceVCPU   where
@@ -350,3 +365,21 @@ snapshotTimedPDsResult :: Map Word32 Word64
 snapshotTimedPDsResult = M.fromList [ (200, 16)
                                     , (300, 16)
                                     ]
+
+-- IP ----------------------------------------------------------------------
+
+-- Raw payloads for volume points
+ipPRs = [ipPR0, ipPR1, ipPR2 ]
+
+ipPR0, ipPR1, ipPR2 :: Word64
+ipPR0 = 1 + (2 `shift` 8) + (2 `shift` 16) + (1 `shift` 32)
+ipPR1 = 2 + (2 `shift` 8) + (2 `shift` 16) + (1 `shift` 32)
+ipPR2 = 0 + (3 `shift` 8) + (2 `shift` 16) + (1 `shift` 32)
+
+-- Decoded payloads for ip points
+ipPDs = [ipPD0, ipPD1, ipPD2 ]
+
+ipPD0, ipPD1, ipPD2 :: PDIP
+ipPD0 = PDIP IPActive IPUpdate End IPAlloc
+ipPD1 = PDIP IPDown   IPUpdate End IPAlloc
+ipPD2 = PDIP IPNone   IPDelete End IPAlloc

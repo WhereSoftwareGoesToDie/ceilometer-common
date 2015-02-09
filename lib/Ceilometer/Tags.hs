@@ -13,6 +13,7 @@
 
 module Ceilometer.Tags where
 
+import Data.Maybe
 import Data.Text
 import Vaultaire.Types
 
@@ -46,10 +47,7 @@ valVolumeFastId  = pack "f7797fba-2ce2-4d19-a607-29f4bc2acb3f"
 lookupMetricName = lookupSource keyMetricName
 lookupEvent      = lookupSource keyEvent
 lookupVolumeType = lookupSource keyVolumeType
-isEvent          = sdEvent . lookupEvent
-sdEvent (Just x) = x == valTrue
-sdEvent Nothing  = True
-
+isEvent          = maybe True (== valTrue) . lookupEvent
 
 sourceIsBlock, sourceIsFast :: SourceDict -> Bool
 sourceIsBlock sd

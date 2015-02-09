@@ -36,6 +36,9 @@ module Ceilometer.Types
   , PFImageVerb(..), pfImageVerb
   , PFSnapshotStatus(..), pfSnapshotStatus
   , PFSnapshotVerb(..), pfSnapshotVerb
+  , PFIPStatus(..), pfIPStatus
+  , PFIPVerb(..), pfIPVerb
+  , PFIPAlloc(..), pfIPAlloc
 
     -- * Payload Decoded Points
   , PDVolume(PDVolume), pdVolume
@@ -47,7 +50,8 @@ module Ceilometer.Types
   , PDInstanceFlavor(PDInstanceFlavor), pdInstanceFlavor
   , PDImage(PDImage), pdImage
   , PDImageP(PDImageP), pdImageP
-  , PDSnapshot(..), pdSnapshot
+  , PDSnapshot(PDSnapshot), pdSnapshot
+  , PDIP(PDIP), pdIP
 
     -- * Values
   , Valued, value
@@ -67,6 +71,7 @@ import           Ceilometer.Types.Base
 import           Ceilometer.Types.CPU
 import           Ceilometer.Types.Image
 import           Ceilometer.Types.Instance
+import           Ceilometer.Types.IP
 import           Ceilometer.Types.Snapshot
 import           Ceilometer.Types.Volume
 import           Vaultaire.Types
@@ -133,6 +138,9 @@ instance Valued PDSnapshot       where
   type PFValue PDSnapshot        = PFValue32
   value f (PDSnapshot a b c x)   = PDSnapshot a b c <$> f x
 
+instance Valued PDIP       where
+  type PFValue PDIP        = PFIPAlloc
+  value f (PDIP a b c x)   = PDIP a b c <$> f x
 
 -- | Information needed to parse/fold Ceilometer types, supplied by users.
 --
