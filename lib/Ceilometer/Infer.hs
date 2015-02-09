@@ -55,29 +55,31 @@ inferPrismFold :: forall a. Typeable a
                => Env -> Maybe (APrism' Word64 a, PFold (Timed a) (FoldResult a))
 inferPrismFold (Env fm sd (TimeStamp s) (TimeStamp e)) = do
   name <- lookupMetricName sd
-  case name of
-    "cpu"                -> do Refl <- eqT :: Maybe (a :~: PDCPU)
-                               Just (pCPU, fCPU)
+  if | name == valCPU -> do
+         Refl <- eqT :: Maybe (a :~: PDCPU)
+         Just (pCPU, fCPU)
 
-    "volume.size" -> if
-      | sourceIsBlock sd -> do Refl <- eqT :: Maybe (a :~: PDVolume)
-                               Just (pVolume, fVolume s e)
-      | sourceIsFast  sd -> do Refl <- eqT :: Maybe (a :~: PDSSD)
-                               Just (pSSD, fSSD s e)
-      | otherwise        ->    Nothing
+     | name == valVolume && sourceIsBlock sd -> do
+         Refl <- eqT :: Maybe (a :~: PDVolume)
+         Just (pVolume, fVolume s e)
 
-    "instance_flavor"    -> do Refl <- eqT :: Maybe (a :~: PDInstanceFlavor)
-                               Just (pInstanceFlavor fm, fInstanceFlavor)
+     | name == valVolume && sourceIsFast  sd -> do
+         Refl <- eqT :: Maybe (a :~: PDSSD)
+         Just (pSSD, fSSD s e)
 
-    "instance_vcpu"      -> do Refl <- eqT :: Maybe (a :~: PDInstanceVCPU)
-                               Just (pInstanceVCPU, fInstanceVCPU)
+     | name == valInstanceFlavor -> do
+         Refl <- eqT :: Maybe (a :~: PDInstanceFlavor)
+         Just (pInstanceFlavor fm, fInstanceFlavor)
 
-    "instance_ram"       -> do Refl <- eqT :: Maybe (a :~: PDInstanceRAM)
-                               Just (pInstanceRAM, fInstanceRAM)
+     | name == valInstanceVCPU -> do
+         Refl <- eqT :: Maybe (a :~: PDInstanceVCPU)
+         Just (pInstanceVCPU, fInstanceVCPU)
 
-    -- TODO what about instance_disk??? does it exist? is it disk.read/write??
+     | name == valInstanceRAM -> do
+         Refl <- eqT :: Maybe (a :~: PDInstanceRAM)
+         Just (pInstanceRAM, fInstanceRAM)
 
-    _ -> Nothing
+     | otherwise -> Nothing
 
 -- "Universalised" versions of prisms and folds
 

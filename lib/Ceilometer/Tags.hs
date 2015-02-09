@@ -25,8 +25,22 @@ keyVolumeType = pack "volume_type"
 valTrue       = pack "1"
 valFalse      = pack "0"
 
-volumeTypeBlockId = pack "7a522201-7c27-4eaa-9d95-d70cfaaeb16a"
-volumeTypeFastId  = pack "f7797fba-2ce2-4d19-a607-29f4bc2acb3f"
+
+valCPU            = pack "cpu"
+valDiskWrites     = pack "disk.write.bytes"
+valDiskReads      = pack "disk.read.bytes"
+valIP             = pack "ip.floating"
+valImage          = pack "image.size"
+valInstanceFlavor = pack "instance_flavor"
+valInstanceRAM    = pack "instance_ram"
+valInstanceVCPU   = pack "instance_vcpus"
+valNeutronIn      = pack "network.incoming.bytes"
+valNeutronOut     = pack "network.outgoing.bytes"
+valSnapshot       = pack "snapshot.size"
+valVolume         = pack "volume.size"
+
+valVolumeBlockId = pack "7a522201-7c27-4eaa-9d95-d70cfaaeb16a"
+valVolumeFastId  = pack "f7797fba-2ce2-4d19-a607-29f4bc2acb3f"
 
 lookupMetricName = lookupSource keyMetricName
 lookupEvent      = lookupSource keyEvent
@@ -34,8 +48,8 @@ lookupVolumeType = lookupSource keyVolumeType
 
 sourceIsBlock, sourceIsFast :: SourceDict -> Bool
 sourceIsBlock sd
-  | Just v <- lookupVolumeType sd, v == volumeTypeBlockId = True
-  | otherwise                                             = False
+  | Just v <- lookupVolumeType sd, v == valVolumeBlockId = True
+  | otherwise                                            = False
 sourceIsFast sd
-  | Just v <- lookupVolumeType sd, v == volumeTypeFastId = True
+  | Just v <- lookupVolumeType sd, v == valVolumeFastId  = True
   | otherwise                                            = False
