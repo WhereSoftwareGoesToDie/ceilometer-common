@@ -29,11 +29,12 @@ module Ceilometer.Fold
   , foldVolume
   , foldSSD
   , foldImage
-  , foldImageP
+  , foldImagePollster
   , foldInstanceFlavor
   , foldInstanceVCPU
   , foldInstanceRAM
   , foldInstanceDisk
+  , foldIP
   , foldSnapshot
     -- * Utilities
   , Acc(..), PFold(..), pFold, pFoldStream
@@ -106,7 +107,8 @@ type family FoldResult x where
   FoldResult PDCPU            = Word64
   FoldResult PDVolume         = Map PFValue32 Word64
   FoldResult PDImage          = Map PFValue32 Word64
-  FoldResult PDImageP         = Map PFValue64 Word64
+  FoldResult PDImagePollster  = Map PFValue64 Word64
+  FoldResult PDIP             = Map PFIPAlloc Word64
   FoldResult PDSSD            = Map PFValue32 Word64
   FoldResult PDInstanceVCPU   = Map PFValue32 Word64
   FoldResult PDInstanceRAM    = Map PFValue32 Word64
@@ -144,7 +146,7 @@ foldSSD window = PFold step bEvent (eEvent window)
 foldImage :: Window -> PFold (Timed PDImage) (FoldResult PDImage)
 foldImage window = PFold step bEvent (eEvent window)
   where -- Stop folding as soon as the image is deleted
-        step (More (prev,acc)) (Timed end (PDImage _ ImageDelete _))
+        step (More (prev,acc)) (Timed end (PDImage _ ImageDelete _ _))
           = Term (Nothing, go end acc prev)
         step a x = sEvent window a x
 
@@ -175,8 +177,11 @@ foldInstanceRAM    =  L.Fold sGaugePollster bGaugePollster snd
 foldInstanceDisk   :: L.Fold (Timed PDInstanceDisk) (FoldResult PDInstanceDisk)
 foldInstanceDisk   =  L.Fold sGaugePollster bGaugePollster snd
 
-foldImageP   :: L.Fold (Timed PDImageP) (FoldResult PDImageP)
-foldImageP   =  L.Fold sGaugePollster bGaugePollster snd
+foldImagePollster  :: L.Fold (Timed PDImagePollster) (FoldResult PDImagePollster)
+foldImagePollster  =  L.Fold sGaugePollster bGaugePollster snd
+
+foldIP :: Window ->  L.Fold (Timed PDIP) (FoldResult PDIP)
+foldIP window = L.Fold (sEvent window) bEvent (eEvent window)
 
 -- Utilities -------------------------------------------------------------------
 
@@ -226,7 +231,7 @@ eCumulative (Just (first, latest), acc) = acc + latest - first
 eCumulative (_, acc)                    = acc
 
 type AGaugePollster x = ( Maybe (Timed x)          -- latest
-                   , Map (PFValue x) Word64 ) -- accumulated map
+                        , Map (PFValue x) Word64 ) -- accumulated map
 
 -- | Finds the length of time allocated to each "state" of the resource.
 --   e.g. time a @Volume@ spent at 10GB, then at 20GB (if resized), etc.

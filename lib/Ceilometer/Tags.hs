@@ -13,6 +13,7 @@
 
 module Ceilometer.Tags where
 
+import           Data.Maybe
 import           Data.Text
 import           Vaultaire.Types
 
@@ -46,3 +47,12 @@ lookupMetricName = lookupSource keyMetricName
 lookupEvent      = lookupSource keyEvent
 lookupVolumeType = lookupSource keyVolumeType
 lookupCompound   = lookupSource keyCompound
+isEvent          = maybe True (== valTrue) . lookupEvent
+
+sourceIsBlock, sourceIsFast :: SourceDict -> Bool
+sourceIsBlock sd
+  | Just v <- lookupVolumeType sd, v == valVolumeBlockId = True
+  | otherwise                                            = False
+sourceIsFast sd
+  | Just v <- lookupVolumeType sd, v == valVolumeFastId  = True
+  | otherwise                                            = False

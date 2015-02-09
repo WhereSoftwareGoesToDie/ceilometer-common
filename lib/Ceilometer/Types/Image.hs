@@ -19,7 +19,7 @@ module Ceilometer.Types.Image
     PFImageStatus(..), pfImageStatus
   , PFImageVerb(..), pfImageVerb
   , PDImage(..), pdImage
-  , PDImageP(..), pdImageP
+  , PDImagePollster(..), pdImagePollster
   , imageStatus, imageVerb, imageVal
   ) where
 
@@ -55,30 +55,29 @@ $(declarePF    "Image"
 data PDImage = PDImage
   { _imageStatus   :: PFImageStatus
   , _imageVerb     :: PFImageVerb
+  , _imageEndpoint :: PFEndpoint
   , _imageVal      :: PFValue32 }
   deriving (Eq, Show, Read, Typeable)
 
 $(makeLenses ''PDImage)
 
-newtype PDImageP = PDImageP { _pdImagePVal :: PFValue64 }
+newtype PDImagePollster = PDImagePollster { _pdImagePollsterVal :: PFValue64 }
      deriving (Show, Read, Eq, Typeable)
 
-pdImageP :: Iso' PRSimple PDImageP
-pdImageP = iso (PDImageP . _prSimpleVal) (PRSimple . _pdImagePVal)
+pdImagePollster :: Iso' PRSimple PDImagePollster
+pdImagePollster = iso (PDImagePollster . _prSimpleVal) (PRSimple . _pdImagePollsterVal)
 
 pdImage :: Prism' PRCompoundEvent PDImage
 pdImage = prism' pretty parse
-  where parse raw = do
-          s <- raw ^? eventStatus   . pfImageStatus
-          v <- raw ^? eventVerb     . pfImageVerb
-          e <- raw ^? eventEndpoint . pfEndpoint
-          x <- raw ^? eventVal
-          case e of
-            Instant -> Just $ PDImage s v x
-            _       -> Nothing
-        pretty (PDImage status verb val)
+  where parse raw
+          =   PDImage
+          <$> (raw ^? eventStatus   . pfImageStatus)
+          <*> (raw ^? eventVerb     . pfImageVerb)
+          <*> (raw ^? eventEndpoint . pfEndpoint)
+          <*> (raw ^? eventVal )
+        pretty (PDImage status verb ep val)
           = PRCompoundEvent
             val
-            (Instant ^. re pfEndpoint)
-            (verb    ^. re pfImageVerb)
-            (status  ^. re pfImageStatus)
+            (ep     ^. re pfEndpoint)
+            (verb   ^. re pfImageVerb)
+            (status ^. re pfImageStatus)

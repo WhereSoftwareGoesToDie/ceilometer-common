@@ -35,6 +35,9 @@ module Ceilometer.Types
   , PFImageVerb(..), pfImageVerb
   , PFSnapshotStatus(..), pfSnapshotStatus
   , PFSnapshotVerb(..), pfSnapshotVerb
+  , PFIPStatus(..), pfIPStatus
+  , PFIPVerb(..), pfIPVerb
+  , PFIPAlloc(..), pfIPAlloc
 
     -- * Payload Decoded Points
   , PDVolume(PDVolume), pdVolume
@@ -45,8 +48,9 @@ module Ceilometer.Types
   , PDInstanceDisk(PDInstanceDisk), pdInstanceDisk
   , PDInstanceFlavor(PDInstanceFlavor), pdInstanceFlavor
   , PDImage(PDImage), pdImage
-  , PDImageP(PDImageP), pdImageP
-  , PDSnapshot(..), pdSnapshot
+  , PDImagePollster(PDImagePollster), pdImagePollster
+  , PDSnapshot(PDSnapshot), pdSnapshot
+  , PDIP(PDIP), pdIP
 
     -- * Values
   , Valued, value
@@ -66,6 +70,7 @@ import           Ceilometer.Types.Base
 import           Ceilometer.Types.CPU
 import           Ceilometer.Types.Image
 import           Ceilometer.Types.Instance
+import           Ceilometer.Types.IP
 import           Ceilometer.Types.Snapshot
 import           Ceilometer.Types.Volume
 import           Control.PFold
@@ -135,16 +140,19 @@ instance Valued PDInstanceDisk   where
 
 instance Valued PDImage          where
   type PFValue PDImage           = PFValue32
-  value f (PDImage s v x)        = PDImage s v <$> f x
+  value f (PDImage s v e x)      = PDImage s v e <$> f x
 
-instance Valued PDImageP         where
-  type PFValue PDImageP          = PFValue64
-  value f (PDImageP x)           = PDImageP <$> f x
+instance Valued PDImagePollster  where
+  type PFValue PDImagePollster   = PFValue64
+  value f (PDImagePollster x)    = PDImagePollster <$> f x
 
 instance Valued PDSnapshot       where
   type PFValue PDSnapshot        = PFValue32
   value f (PDSnapshot a b c x)   = PDSnapshot a b c <$> f x
 
+instance Valued PDIP       where
+  type PFValue PDIP        = PFIPAlloc
+  value f (PDIP a b c x)   = PDIP a b c <$> f x
 
 -- | Information needed to parse/fold Ceilometer types, supplied by users.
 --
