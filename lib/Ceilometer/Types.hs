@@ -44,6 +44,7 @@ module Ceilometer.Types
   , PDInstanceDisk(PDInstanceDisk), pdInstanceDisk
   , PDInstanceFlavor(PDInstanceFlavor), pdInstanceFlavor
   , PDImage(PDImage), pdImage
+  , PDImageP(PDImageP), pdImageP
 
     -- * Extra Volume Related Values and Helpers
   , volumeTypeBlockId, volumeTypeFastId
@@ -123,6 +124,10 @@ instance Valued PDInstanceDisk where
 instance Valued PDImage where
   type PFValue PDImage  = PFValue32
   value f (PDImage s v x) = PDImage s v <$> f x
+
+instance Valued PDImageP where
+  type PFValue PDImageP = PFValue64
+  value f (PDImageP x) = PDImageP <$> f x
 
 
 -- | Information needed to parse/fold Ceilometer types, supplied by users.

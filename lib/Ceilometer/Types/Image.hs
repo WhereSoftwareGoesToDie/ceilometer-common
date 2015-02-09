@@ -19,6 +19,7 @@ module Ceilometer.Types.Image
     PFImageStatus(..), pfImageStatus
   , PFImageVerb(..), pfImageVerb
   , PDImage(..), pdImage
+  , PDImageP(..), pdImageP
   , imageStatus, imageVerb, imageVal
   ) where
 
@@ -58,6 +59,12 @@ data PDImage = PDImage
   deriving (Eq, Show, Read, Typeable)
 
 $(makeLenses ''PDImage)
+
+newtype PDImageP = PDImageP { _pdImagePVal :: PFValue64 }
+     deriving (Show, Read, Eq, Typeable)
+
+pdImageP :: Iso' PRSimple PDImageP
+pdImageP = iso (PDImageP . _prSimpleVal) (PRSimple . _pdImagePVal)
 
 pdImage :: Prism' PRCompoundEvent PDImage
 pdImage = prism' pretty parse
