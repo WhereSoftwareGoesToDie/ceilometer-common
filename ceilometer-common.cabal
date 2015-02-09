@@ -20,6 +20,7 @@ library
   exposed-modules:     Ceilometer.Types
                        Ceilometer.Fold
                        Ceilometer.Client
+                       Ceilometer.Tags
 
   other-modules:       Ceilometer.Types.TH
                        Ceilometer.Types.Base

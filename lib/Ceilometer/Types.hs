@@ -49,10 +49,6 @@ module Ceilometer.Types
   , PDImageP(PDImageP), pdImageP
   , PDSnapshot(..), pdSnapshot
 
-    -- * Extra Volume Related Values and Helpers
-  , volumeTypeBlockId, volumeTypeFastId
-  , lookupVolumeType, sourceIsBlock, sourceIsFast
-
     -- * Values
   , Valued, value
   , Timed(Timed), time

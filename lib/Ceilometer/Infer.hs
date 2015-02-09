@@ -26,8 +26,6 @@ module Ceilometer.Infer
     inferPrism
   , inferFold
   , FoldResult
-    -- * Utilities
-  , lookupEvent, lookupMetricName, isEvent
   ) where
 
 import           Control.Applicative
@@ -38,17 +36,9 @@ import           Data.Word
 
 import           Ceilometer.Fold
 import           Ceilometer.Types
+import           Ceilometer.Tags
 import           Vaultaire.Types
 
-lookupEvent, lookupMetricName :: SourceDict -> Maybe Text
-lookupMetricName = lookupSource "metric_name"
-lookupEvent      = lookupSource "_event"
-
-isEvent :: SourceDict -> Bool
-isEvent sd = case lookupEvent sd of
-    Just "1" -> True
-    Just _   -> False
-    Nothing  -> False
 
 inferPrism :: forall a. Typeable a
            => Env -> Maybe (APrism' Word64 a)
@@ -65,39 +55,46 @@ inferPrismFold :: forall a. Typeable a
                => Env -> Maybe (APrism' Word64 a, PFold (Timed a) (FoldResult a))
 inferPrismFold (Env fm sd (TimeStamp s) (TimeStamp e)) = do
   name <- lookupMetricName sd
-  case name of
-    "cpu"                -> do Refl <- eqT :: Maybe (a :~: PDCPU)
-                               Just (pCPU, fCPU)
+  if | name == valCPU -> do
+         Refl <- eqT :: Maybe (a :~: PDCPU)
+         Just (pCPU, fCPU)
 
-    "volume.size" -> if
-      | sourceIsBlock sd -> do Refl <- eqT :: Maybe (a :~: PDVolume)
-                               Just (pVolume, fVolume s e)
-      | sourceIsFast  sd -> do Refl <- eqT :: Maybe (a :~: PDSSD)
-                               Just (pSSD, fSSD s e)
-      | otherwise        ->    Nothing
+     | name == valVolume && sourceIsBlock sd -> do
+         Refl <- eqT :: Maybe (a :~: PDVolume)
+         Just (pVolume, fVolume s e)
 
-    "instance_flavor"    -> do Refl <- eqT :: Maybe (a :~: PDInstanceFlavor)
-                               Just (pInstanceFlavor fm, fInstanceFlavor)
+     | name == valVolume && sourceIsFast  sd -> do
+         Refl <- eqT :: Maybe (a :~: PDSSD)
+         Just (pSSD, fSSD s e)
 
-    "instance_vcpu"      -> do Refl <- eqT :: Maybe (a :~: PDInstanceVCPU)
-                               Just (pInstanceVCPU, fInstanceVCPU)
+     | name == valInstanceFlavor -> do
+         Refl <- eqT :: Maybe (a :~: PDInstanceFlavor)
+         Just (pInstanceFlavor fm, fInstanceFlavor)
 
-    "instance_ram"       -> do Refl <- eqT :: Maybe (a :~: PDInstanceRAM)
-                               Just (pInstanceRAM, fInstanceRAM)
+     | name == valInstanceVCPU -> do
+         Refl <- eqT :: Maybe (a :~: PDInstanceVCPU)
+         Just (pInstanceVCPU, fInstanceVCPU)
 
-    "instance_disk"      -> do Refl <- eqT :: Maybe (a :~: PDInstanceDisk)
-                               Just (pInstanceDisk, fInstanceDisk)
+     | name == valInstanceRAM -> do
+         Refl <- eqT :: Maybe (a :~: PDInstanceRAM)
+         Just (pInstanceRAM, fInstanceRAM)
 
-    "image.size" -> if
-      | isEvent sd       -> do Refl <- eqT :: Maybe (a :~: PDImage)
-                               Just (pImage, fImage s e)
-      | otherwise        -> do Refl <- eqT :: Maybe (a :~: PDImageP)
-                               Just (pImageP, fImageP)
+     | name == valInstanceDisk -> do
+        Refl <- eqT :: Maybe (a :~: PDInstanceDisk)
+        Just (pInstanceDisk, fInstanceDisk)
 
-    "snapshot.size"      -> do Refl <- eqT :: Maybe (a :~: PDSnapshot)
-                               Just (pSnapshot, fSnapshot s e)
+     | name == valImage -> if isEvent sd then do
+        Refl <- eqT :: Maybe (a :~: PDImage)
+        Just (pImage, fImage s e)  
+                           else do
+        Refl <- eqT :: Maybe (a :~: PDImageP)
+        Just (pImageP, fImageP)
 
-    _ -> Nothing
+     | name == valSnapshot -> do
+        Refl <- eqT :: Maybe (a :~: PDSnapshot)
+        Just (pSnapshot, fSnapshot s e)
+
+     | otherwise -> Nothing
 
 -- "Universalised" versions of prisms and folds
 

@@ -53,6 +53,8 @@ import           Vaultaire.Types
 --
 --   Otherwise we get a `FoldResult` matching that type.
 --
+--   Example usage: `decodeAndFold (undefined :: proxy PDCPU) env points`
+--
 decodeAndFold
   :: forall a m proxy. (Typeable a, Monad m, Applicative m)
   => proxy a                    -- ^ We expect these @SimplePoint@ to be of type `a`
@@ -83,7 +85,7 @@ decodeWith
   :: Monad m
   => Prism' Word64 a                         -- ^ Use this particular prism for decoding
   -> Pipe SimplePoint (Maybe (Timed a)) m () -- ^ Decoding pipe
-decodeWith p = do
+decodeWith p = forever $ do
   SimplePoint _ (TimeStamp t) v <- await
   yield $ T.sequence $ Timed t $ v ^? p
 
