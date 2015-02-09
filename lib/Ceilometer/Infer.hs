@@ -35,8 +35,8 @@ import           Data.Typeable
 import           Data.Word
 
 import           Ceilometer.Fold
-import           Ceilometer.Types
 import           Ceilometer.Tags
+import           Ceilometer.Types
 import           Vaultaire.Types
 
 

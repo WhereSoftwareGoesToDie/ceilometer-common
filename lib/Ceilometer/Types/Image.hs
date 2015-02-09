@@ -53,9 +53,9 @@ $(declarePF    "Image"
             [ ''Show, ''Read, ''Eq, ''Bounded, ''Enum ])
 
 data PDImage = PDImage
-  { _imageStatus   :: PFImageStatus
-  , _imageVerb     :: PFImageVerb
-  , _imageVal      :: PFValue32 }
+  { _imageStatus :: PFImageStatus
+  , _imageVerb   :: PFImageVerb
+  , _imageVal    :: PFValue32 }
   deriving (Eq, Show, Read, Typeable)
 
 $(makeLenses ''PDImage)

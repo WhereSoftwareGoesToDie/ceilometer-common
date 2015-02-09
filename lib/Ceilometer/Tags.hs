@@ -13,9 +13,9 @@
 
 module Ceilometer.Tags where
 
-import Data.Maybe
-import Data.Text
-import Vaultaire.Types
+import           Data.Maybe
+import           Data.Text
+import           Vaultaire.Types
 
 keyMetricName = pack "metric_name"
 keyTenancyID  = pack "project_id"
