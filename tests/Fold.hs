@@ -14,7 +14,7 @@ import           SampleData
 
 suite :: Spec
 suite = do
-  -- "Cumulative" resources
+  -- "Cumulative Pollster" resources
   describe "Folding points for CUMULATIVE resource: CPU" $ do
     it "ok for monotonically decreasing points"
       $ L.fold foldCPU cpuDecreasing `shouldBe` cpuDecreasingResult
@@ -25,7 +25,7 @@ suite = do
     it "ok for non-monotonic points"
       $ L.fold foldCPU cpuAny `shouldBe` cpuAnyResult
 
-  -- "Event" resources
+  -- "Gauge Event" resources
   describe "Folding points for EVENT resource: VOLUME" $
     it "ok for example payload"
       $ pFold foldVolumeAll volumeTimedPDs `shouldBe` volumeTimedPDsResult
@@ -38,10 +38,18 @@ suite = do
     it "ok for example payload"
       $ pFold foldImageAll imageTimedPDs `shouldBe` imageTimedPDsResult
 
-  -- "Pollster" resources
+  describe "Folding points for EVENT resource: SNAPSHOT" $
+    it "ok for example payload"
+      $ pFold foldSnapshotAll snapshotTimedPDs `shouldBe` snapshotTimedPDsResult
+
+  -- "Gauge Pollster" resources
   describe "Folding points for POLLSTER resource: INSTANCE FLAVOR" $
     it "ok for example payload"
       $ L.fold foldInstanceFlavor flavorTimedPDs `shouldBe` M.fromList flavorTimedPDsResult
+
+  describe "Folding points for POLLSTER resource: IMAGE POLLSTER" $
+    it "ok for example payload"
+      $ L.fold foldImageP imagePTimedPDs `shouldBe` imagePTimedPDsResult
 
   describe "Folding points on edge cases:" $
     prop "discards the rest after VOLUME DELETE" $ property $ do
@@ -52,6 +60,7 @@ suite = do
       let xs1  = zipWith Timed [testS..] $ vs0 ++ [bomb] ++ vs1
       return $ pFold foldVolumeAll xs0 == pFold foldVolumeAll xs1
 
-  where foldVolumeAll = foldVolume (testS, testE)
-        foldSSDAll    = foldSSD    (testS, testE)
-        foldImageAll  = foldImage  (testS, testE)
+  where foldVolumeAll   = foldVolume   (testS, testE)
+        foldSSDAll      = foldSSD      (testS, testE)
+        foldImageAll    = foldImage    (testS, testE)
+        foldSnapshotAll = foldSnapshot (testS, testE)
