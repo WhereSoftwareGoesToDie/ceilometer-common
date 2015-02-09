@@ -33,6 +33,8 @@ module Ceilometer.Types
   , PFInstanceStatus(..), pfInstanceStatus
   , PFImageStatus(..), pfImageStatus
   , PFImageVerb(..), pfImageVerb
+  , PFSnapshotStatus(..), pfSnapshotStatus
+  , PFSnapshotVerb(..), pfSnapshotVerb
 
     -- * Payload Decoded Points
   , PDVolume(PDVolume), pdVolume
@@ -44,6 +46,7 @@ module Ceilometer.Types
   , PDInstanceFlavor(PDInstanceFlavor), pdInstanceFlavor
   , PDImage(PDImage), pdImage
   , PDImageP(PDImageP), pdImageP
+  , PDSnapshot(..), pdSnapshot
 
     -- * Values
   , Valued, value
@@ -63,6 +66,7 @@ import           Ceilometer.Types.Base
 import           Ceilometer.Types.CPU
 import           Ceilometer.Types.Image
 import           Ceilometer.Types.Instance
+import           Ceilometer.Types.Snapshot
 import           Ceilometer.Types.Volume
 import           Control.PFold
 import           Vaultaire.Types
@@ -98,41 +102,53 @@ class Valued a where
   value :: Lens' a (PFValue a)
 
 instance Valued a => Valued (Timed a) where
-  type PFValue (Timed a) = PFValue a
-  value f (Timed t x) = Timed t <$> value f x
+  type PFValue (Timed a)         = PFValue a
+  value f (Timed t x)            = Timed t <$> value f x
 
-instance Valued PDCPU      where
-  type PFValue PDCPU = PFValue64
-  value f (PDCPU x)  = PDCPU <$> f x
+instance Valued PDCPU            where
+  type PFValue PDCPU             = PFValue64
+  value f (PDCPU x)              = PDCPU <$> f x
 
-instance Valued PDVolume   where
-  type PFValue PDVolume      = PFValue32
-  value f (PDVolume a b c x) = PDVolume a b c <$> f x
+instance Valued PDVolume         where
+  type PFValue PDVolume          = PFValue32
+  value f (PDVolume a b c x)     = PDVolume a b c <$> f x
 
-instance Valued PDSSD   where
-  type PFValue PDSSD      = PFValue32
-  value f (PDSSD a b c x) = PDSSD a b c <$> f x
+instance Valued PDSSD            where
+  type PFValue PDSSD             = PFValue32
+  value f (PDSSD a b c x)        = PDSSD a b c <$> f x
 
 instance Valued PDInstanceFlavor where
   type PFValue PDInstanceFlavor  = PFValueText
   value f (PDInstanceFlavor s x) = PDInstanceFlavor s <$> f x
 
-instance Valued PDInstanceVCPU where
-  type PFValue PDInstanceVCPU  = PFValue32
-  value f (PDInstanceVCPU s x) = PDInstanceVCPU s <$> f x
+instance Valued PDInstanceVCPU   where
+  type PFValue PDInstanceVCPU    = PFValue32
+  value f (PDInstanceVCPU s x)   = PDInstanceVCPU s <$> f x
 
-instance Valued PDInstanceRAM where
-  type PFValue PDInstanceRAM  = PFValue32
-  value f (PDInstanceRAM s x) = PDInstanceRAM s <$> f x
+instance Valued PDInstanceRAM    where
+  type PFValue PDInstanceRAM     = PFValue32
+  value f (PDInstanceRAM s x)    = PDInstanceRAM s <$> f x
 
-instance Valued PDInstanceDisk where
-  type PFValue PDInstanceDisk  = PFValue32
-  value f (PDInstanceDisk s x) = PDInstanceDisk s <$> f x
+instance Valued PDInstanceDisk   where
+  type PFValue PDInstanceDisk    = PFValue32
+  value f (PDInstanceDisk s x)   = PDInstanceDisk s <$> f x
 
-instance Valued PDImage where
-  type PFValue PDImage  = PFValue32
-  value f (PDImage s v x) = PDImage s v <$> f x
+instance Valued PDImage          where
+  type PFValue PDImage           = PFValue32
+  value f (PDImage s v x)        = PDImage s v <$> f x
 
-instance Valued PDImageP where
-  type PFValue PDImageP = PFValue64
-  value f (PDImageP x) = PDImageP <$> f x
+instance Valued PDImageP         where
+  type PFValue PDImageP          = PFValue64
+  value f (PDImageP x)           = PDImageP <$> f x
+
+instance Valued PDSnapshot       where
+  type PFValue PDSnapshot        = PFValue32
+  value f (PDSnapshot a b c x)   = PDSnapshot a b c <$> f x
+
+
+-- | Information needed to parse/fold Ceilometer types, supplied by users.
+--
+data    Env       = Env { _flavormap  :: FlavorMap
+                        , _sourcedict :: SourceDict
+                        , _start      :: TimeStamp
+                        , _end        :: TimeStamp }

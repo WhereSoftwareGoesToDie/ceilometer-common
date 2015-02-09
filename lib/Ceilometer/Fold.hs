@@ -34,7 +34,7 @@ module Ceilometer.Fold
   , foldInstanceVCPU
   , foldInstanceRAM
   , foldInstanceDisk
-
+  , foldSnapshot
     -- * Utilities
   , Acc(..), PFold(..), pFold, pFoldStream
   , generalizeFold
@@ -112,6 +112,7 @@ type family FoldResult x where
   FoldResult PDInstanceRAM    = Map PFValue32 Word64
   FoldResult PDInstanceDisk   = Map PFValue32 Word64
   FoldResult PDInstanceFlavor = Map PFValueText Word64
+  FoldResult PDSnapshot       = Map PFValue32 Word64
 
 -- Fold ------------------------------------------------------------------------
 
@@ -142,12 +143,23 @@ foldSSD window = PFold step bEvent (eEvent window)
 
 foldImage :: Window -> PFold (Timed PDImage) (FoldResult PDImage)
 foldImage window = PFold step bEvent (eEvent window)
-  where -- Stop folding as soon as the volume is deleted
+  where -- Stop folding as soon as the image is deleted
         step (More (prev,acc)) (Timed end (PDImage _ ImageDelete _))
           = Term (Nothing, go end acc prev)
         step a x = sEvent window a x
 
-        -- Adds the duration up until volume delete
+        -- Adds the duration up until image delete
+        go end acc (Just x) = M.insertWith (+) (x ^. value) (end - x ^. time) acc
+        go _   acc  Nothing = acc
+
+foldSnapshot :: Window -> PFold (Timed PDSnapshot) (FoldResult PDSnapshot)
+foldSnapshot window = PFold step bEvent (eEvent window)
+  where -- Stop folding as soon as the snapshot is deleted
+        step (More (prev,acc)) (Timed end (PDSnapshot _ SnapshotDelete _ _))
+          = Term (Nothing, go end acc prev)
+        step a x = sEvent window a x
+
+        -- Adds the duration up until snapshot delete
         go end acc (Just x) = M.insertWith (+) (x ^. value) (end - x ^. time) acc
         go _   acc  Nothing = acc
 
