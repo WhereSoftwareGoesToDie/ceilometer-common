@@ -27,7 +27,7 @@ module Ceilometer.Infer
   , inferFold
   , FoldResult
     -- * Utilities
-  , lookupEvent, lookupMetricName
+  , lookupEvent, lookupMetricName, isEvent
   ) where
 
 import           Control.Applicative
@@ -44,6 +44,11 @@ lookupEvent, lookupMetricName :: SourceDict -> Maybe Text
 lookupMetricName = lookupSource "metric_name"
 lookupEvent      = lookupSource "_event"
 
+isEvent :: SourceDict -> Bool
+isEvent sd = case lookupEvent sd of
+    Just "1" -> True
+    Just _   -> False
+    Nothing  -> False
 
 inferPrism :: forall a. Typeable a
            => Env -> Maybe (APrism' Word64 a)
@@ -80,7 +85,14 @@ inferPrismFold (Env fm sd (TimeStamp s) (TimeStamp e)) = do
     "instance_ram"       -> do Refl <- eqT :: Maybe (a :~: PDInstanceRAM)
                                Just (pInstanceRAM, fInstanceRAM)
 
-    -- TODO what about instance_disk??? does it exist? is it disk.read/write??
+    "instance_disk"      -> do Refl <- eqT :: Maybe (a :~: PDInstanceDisk)
+                               Just (pInstanceDisk, fInstanceDisk)
+
+    "image.size" -> if
+      | isEvent sd       -> do Refl <- eqT :: Maybe (a :~: PDImage)
+                               Just (pImage, fImage s e)
+      | otherwise        -> do Refl <- eqT :: Maybe (a :~: PDImageP)
+                               Just (pImageP, fImageP)
 
     _ -> Nothing
 
@@ -104,9 +116,21 @@ pInstanceVCPU = prCompoundPollster . pdInstanceVCPU
 pInstanceRAM :: APrism' Word64 PDInstanceRAM
 pInstanceRAM = prCompoundPollster . pdInstanceRAM
 
+pInstanceDisk :: APrism' Word64 PDInstanceDisk
+pInstanceDisk = prCompoundPollster . pdInstanceDisk
+
+pImage :: APrism' Word64 PDImage
+pImage = prCompoundEvent . pdImage
+
+pImageP :: APrism' Word64 PDImageP
+pImageP = prSimple . pdImageP
+
 fCPU            = generalizeFold (timewrapFold foldCPU)
 fVolume s e     = foldVolume (s,e)
 fSSD s e        = foldSSD (s,e)
 fInstanceFlavor = generalizeFold foldInstanceFlavor
 fInstanceVCPU   = generalizeFold foldInstanceVCPU
 fInstanceRAM    = generalizeFold foldInstanceRAM
+fInstanceDisk   = generalizeFold foldInstanceDisk
+fImage s e      = foldImage (s,e)
+fImageP         = generalizeFold foldImageP
