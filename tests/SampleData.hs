@@ -14,10 +14,14 @@ import           Control.Lens              hiding (elements)
 import qualified Data.Bimap                as BM
 import           Data.Binary               (Word64)
 import           Data.Bits
+import           Data.Map                  (Map)
+import qualified Data.Map                  as M
+import           Data.Word
 import           Test.QuickCheck
 import           Test.QuickCheck.Function
 
 import           Ceilometer.Types
+import           Ceilometer.Types.Image    (imageVerb)
 import           Ceilometer.Types.Instance (siphashID)
 import           Ceilometer.Types.Volume   (volumeVerb)
 
@@ -52,23 +56,26 @@ instance Arbitrary PFEndpoint       where arbitrary = arbitraryBoundedEnum
 instance Arbitrary PFVolumeVerb     where arbitrary = arbitraryBoundedEnum
 instance Arbitrary PFVolumeStatus   where arbitrary = arbitraryBoundedEnum
 instance Arbitrary PFInstanceStatus where arbitrary = arbitraryBoundedEnum
+instance Arbitrary PFImageVerb      where arbitrary = arbitraryBoundedEnum
+instance Arbitrary PFImageStatus    where arbitrary = arbitraryBoundedEnum
+
 instance Arbitrary PFValueText      where arbitrary = elements $ BM.keys testFlavors
 
-instance Arbitrary PDCPU      where arbitrary =   PDCPU <$> arbitrary
-instance Arbitrary PDVolume   where arbitrary =   PDVolume
-                                            <$> arbitrary
-                                            <*> arbitrary
-                                            <*> arbitrary
-                                            <*> arbitrary
-instance Arbitrary PDSSD      where arbitrary =   PDSSD
-                                            <$> arbitrary
-                                            <*> arbitrary
-                                            <*> arbitrary
-                                            <*> arbitrary
+instance Arbitrary PDCPU            where arbitrary =   PDCPU <$> arbitrary
+instance Arbitrary PDVolume         where arbitrary =   PDVolume
+                                                  <$> arbitrary
+                                                  <*> arbitrary
+                                                  <*> arbitrary
+                                                  <*> arbitrary
+instance Arbitrary PDSSD            where arbitrary =   PDSSD
+                                                  <$> arbitrary
+                                                  <*> arbitrary
+                                                  <*> arbitrary
+                                                  <*> arbitrary
 instance Arbitrary PDInstanceVCPU   where arbitrary =   PDInstanceVCPU
                                                   <$> arbitrary
                                                   <*> arbitrary
-instance Arbitrary PDInstanceRAM   where arbitrary =   PDInstanceRAM
+instance Arbitrary PDInstanceRAM    where arbitrary =   PDInstanceRAM
                                                   <$> arbitrary
                                                   <*> arbitrary
 instance Arbitrary PDInstanceDisk   where arbitrary =   PDInstanceDisk
@@ -77,6 +84,11 @@ instance Arbitrary PDInstanceDisk   where arbitrary =   PDInstanceDisk
 instance Arbitrary PDInstanceFlavor where arbitrary =   PDInstanceFlavor
                                                   <$> arbitrary
                                                   <*> arbitrary
+instance Arbitrary PDImage          where arbitrary =   PDImage
+                                                  <$> arbitrary
+                                                  <*> arbitrary
+                                                  <*> arbitrary
+instance Arbitrary PDImageP         where arbitrary =   PDImageP <$> arbitrary
 
 instance CoArbitrary PFEndpoint     where coarbitrary = variant . fromEnum
 instance CoArbitrary PFVolumeStatus where coarbitrary = variant . fromEnum
@@ -197,12 +209,59 @@ ssdTimedPDs = [ Timed testS        ssdPD0
 
 -- Volume events
 -- Expected = 2 * 10 + 5 * 30 + 4 * 30 + 10 * 10
---          = 20 + 150 + 120 + 100
+--          = (2 + 10) * 10 + (5 + 4) * 30
+--          = 12 * 10 + 9 * 30
 --          = 390
 -- from borel-core
 --
-volumeTimedPDsResult :: Word64
-volumeTimedPDsResult = 390
+volumeTimedPDsResult :: Map Word32 Word64
+volumeTimedPDsResult = M.fromList [ (10, 12)
+                                  , (30, 9)
+                                  ]
 
-ssdTimedPDsResult :: Word64
+ssdTimedPDsResult :: Map Word32 Word64
 ssdTimedPDsResult = volumeTimedPDsResult
+
+-- IMAGE ----------------------------------------------------------------------
+
+imageNonDelete :: Gen PDImage
+imageNonDelete = (arbitrary :: Gen PDImage) `suchThat` ((/= ImageDelete) . view imageVerb)
+
+-- Raw payloads for volume points
+imagePRs = [imagePR0, imagePR1, imagePR2 ]
+
+imagePR0, imagePR1, imagePR2 :: Word64
+imagePR0 = 1 + (1 `shift` 8) + (3 `shift` 16) + (200000 `shift` 32)
+imagePR1 = 1 + (1 `shift` 8) + (1 `shift` 16) + (400000 `shift` 32)
+imagePR2 = 3 + (3 `shift` 8) + (5 `shift` 16) + (100000 `shift` 32)
+
+-- Decoded payloads for image points
+imagePDs = [imagePD0, imagePD1, imagePD2 ]
+
+imagePD0, imagePD1, imagePD2 :: PDImage
+imagePD0 = PDImage ImageActive  ImageUpload 200000
+imagePD1 = PDImage ImageActive  ImageServe  400000
+imagePD2 = PDImage ImageDeleted ImageDelete 100000
+
+imageTimedPDs :: [Timed PDImage]
+imageTimedPDs = [ Timed testS        imagePD0
+                , Timed (testS + 5)  imagePD1
+                , Timed (testS + 12) imagePD1
+                , Timed (testS + 21) imagePD0
+                , Timed (testS + 32) imagePD2 ]
+
+
+-- Image events
+-- Expected = 5  * 200000
+--          + 7  * 400000
+--          + 9  * 400000
+--          + 11 * 200000
+--          = 16 * 200000
+--          + 16 * 400000
+--          = 9600000
+--
+imageTimedPDsResult :: Map Word32 Word64
+imageTimedPDsResult = M.fromList [ (200000, 16)
+                                 , (400000, 16)
+                                 ]
+
