@@ -71,7 +71,7 @@ pdImage = prism' pretty parse
   where parse raw = do
           s <- raw ^? eventStatus   . pfImageStatus
           v <- raw ^? eventVerb     . pfImageVerb
-          _ <- raw ^? eventEndpoint . pfEndpoint ^? only (Just Instant)
+          _ <- raw ^? eventEndpoint . pfEndpoint . only Instant
           x <- raw ^? eventVal
           Just $ PDImage s v x
         pretty (PDImage status verb val)
