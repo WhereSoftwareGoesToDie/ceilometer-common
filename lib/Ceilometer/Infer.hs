@@ -94,6 +94,9 @@ inferPrismFold (Env fm sd (TimeStamp s) (TimeStamp e)) = do
       | otherwise        -> do Refl <- eqT :: Maybe (a :~: PDImageP)
                                Just (pImageP, fImageP)
 
+    "snapshot.size"      -> do Refl <- eqT :: Maybe (a :~: PDSnapshot)
+                               Just (pSnapshot, fSnapshot s e)
+
     _ -> Nothing
 
 -- "Universalised" versions of prisms and folds
@@ -125,6 +128,9 @@ pImage = prCompoundEvent . pdImage
 pImageP :: APrism' Word64 PDImageP
 pImageP = prSimple . pdImageP
 
+pSnapshot :: APrism' Word64 PDSnapshot
+pSnapshot = prCompoundEvent . pdSnapshot
+
 fCPU            = generalizeFold (timewrapFold foldCPU)
 fVolume s e     = foldVolume (s,e)
 fSSD s e        = foldSSD (s,e)
@@ -134,3 +140,4 @@ fInstanceRAM    = generalizeFold foldInstanceRAM
 fInstanceDisk   = generalizeFold foldInstanceDisk
 fImage s e      = foldImage (s,e)
 fImageP         = generalizeFold foldImageP
+fSnapshot s e   = foldSnapshot (s,e)
