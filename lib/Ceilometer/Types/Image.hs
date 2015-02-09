@@ -68,14 +68,17 @@ pdImageP = iso (PDImageP . _prSimpleVal) (PRSimple . _pdImagePVal)
 
 pdImage :: Prism' PRCompoundEvent PDImage
 pdImage = prism' pretty parse
-  where parse raw
-          =   PDImage
-          <$> (raw ^? eventStatus   . pfImageStatus)
-          <*> (raw ^? eventVerb     . pfImageVerb)
-          <*> (raw ^? eventVal )
+  where parse raw = do
+          s <- raw ^? eventStatus   . pfImageStatus
+          v <- raw ^? eventVerb     . pfImageVerb
+          e <- raw ^? eventEndpoint . pfEndpoint
+          x <- raw ^? eventVal
+          case e of
+            Instant -> Just $ PDImage s v x
+            _       -> Nothing
         pretty (PDImage status verb val)
           = PRCompoundEvent
             val
             (Instant ^. re pfEndpoint)
-            (verb   ^. re pfImageVerb)
-            (status ^. re pfImageStatus)
+            (verb    ^. re pfImageVerb)
+            (status  ^. re pfImageStatus)
