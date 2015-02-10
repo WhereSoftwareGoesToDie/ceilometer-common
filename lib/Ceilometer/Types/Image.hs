@@ -53,9 +53,10 @@ $(declarePF    "Image"
             [ ''Show, ''Read, ''Eq, ''Bounded, ''Enum ])
 
 data PDImage = PDImage
-  { _imageStatus :: PFImageStatus
-  , _imageVerb   :: PFImageVerb
-  , _imageVal    :: PFValue32 }
+  { _imageStatus   :: PFImageStatus
+  , _imageVerb     :: PFImageVerb
+  , _imageEndpoint :: PFEndpoint
+  , _imageVal      :: PFValue32 }
   deriving (Eq, Show, Read, Typeable)
 
 $(makeLenses ''PDImage)
@@ -68,15 +69,15 @@ pdImagePollster = iso (PDImagePollster . _prSimpleVal) (PRSimple . _pdImagePolls
 
 pdImage :: Prism' PRCompoundEvent PDImage
 pdImage = prism' pretty parse
-  where parse raw = do
-          s <- raw ^? eventStatus   . pfImageStatus
-          v <- raw ^? eventVerb     . pfImageVerb
-          _ <- raw ^? eventEndpoint . pfEndpoint . only Instant
-          x <- raw ^? eventVal
-          Just $ PDImage s v x
-        pretty (PDImage status verb val)
+  where parse raw
+          =   PDImage
+          <$> (raw ^? eventStatus   . pfImageStatus)
+          <*> (raw ^? eventVerb     . pfImageVerb)
+          <*> (raw ^? eventEndpoint . pfEndpoint)
+          <*> (raw ^? eventVal )
+        pretty (PDImage status verb ep val)
           = PRCompoundEvent
             val
-            (Instant ^. re pfEndpoint)
-            (verb    ^. re pfImageVerb)
-            (status  ^. re pfImageStatus)
+            (ep     ^. re pfEndpoint)
+            (verb   ^. re pfImageVerb)
+            (status ^. re pfImageStatus)

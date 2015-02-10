@@ -93,7 +93,7 @@ foldSSD window = PFold step bEvent (eEvent window)
 foldImage :: Window -> PFold (Timed PDImage) (FoldResult PDImage)
 foldImage window = PFold step bEvent (eEvent window)
   where -- Stop folding as soon as the image is deleted
-        step (More (prev,acc)) (Timed end (PDImage _ ImageDelete _))
+        step (More (prev,acc)) (Timed end (PDImage _ ImageDelete _ _))
           = Term (Nothing, go end acc prev)
         step a x = sEvent window a x
 

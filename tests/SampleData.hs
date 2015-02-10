@@ -104,6 +104,7 @@ instance Arbitrary PDImage          where arbitrary =   PDImage
                                                   <$> arbitrary
                                                   <*> arbitrary
                                                   <*> arbitrary
+                                                  <*> arbitrary
 instance Arbitrary PDImagePollster  where arbitrary =   PDImagePollster <$> arbitrary
 instance Arbitrary PDSnapshot       where arbitrary =   PDSnapshot
                                                   <$> arbitrary
@@ -279,9 +280,9 @@ imagePR2 = 3 + (5 `shift` 8) + (0 `shift` 16) + (100000 `shift` 32)
 imagePDs = [imagePD0, imagePD1, imagePD2 ]
 
 imagePD0, imagePD1, imagePD2 :: PDImage
-imagePD0 = PDImage ImageActive  ImageUpload 200000
-imagePD1 = PDImage ImageActive  ImageServe  400000
-imagePD2 = PDImage ImageDeleted ImageDelete 100000
+imagePD0 = PDImage ImageActive  ImageUpload Instant 200000
+imagePD1 = PDImage ImageActive  ImageServe  Instant 400000
+imagePD2 = PDImage ImageDeleted ImageDelete Instant 100000
 
 imageTimedPDs :: [Timed PDImage]
 imageTimedPDs = [ Timed testS        imagePD0

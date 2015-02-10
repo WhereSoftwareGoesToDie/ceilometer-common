@@ -128,7 +128,7 @@ instance Valued PDInstanceDisk   where
 
 instance Valued PDImage          where
   type PFValue PDImage           = PFValue32
-  value f (PDImage s v x)        = PDImage s v <$> f x
+  value f (PDImage s v e x)      = PDImage s v e <$> f x
 
 instance Valued PDImagePollster  where
   type PFValue PDImagePollster   = PFValue64
