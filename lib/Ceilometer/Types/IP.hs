@@ -25,7 +25,7 @@ module Ceilometer.Types.IP
 
 import           Control.Applicative
 import           Control.Lens
-import           Data.Binary           (Word8, Word32)
+import           Data.Binary           (Word32, Word8)
 import           Data.Text             (Text)
 import           Data.Typeable
 
@@ -67,7 +67,7 @@ $(makeLenses ''PDIP)
 pdIP :: Prism' PRCompoundEvent PDIP
 pdIP = prism' pretty parse
   where parse raw
-          =   PDIP 
+          =   PDIP
           <$> (raw ^? eventStatus   . pfIPStatus)
           <*> (raw ^? eventVerb     . pfIPVerb)
           <*> (raw ^? eventEndpoint . pfEndpoint)
