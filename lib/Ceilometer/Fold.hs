@@ -24,10 +24,14 @@ module Ceilometer.Fold
     foldCPU
   , foldVolume
   , foldSSD
+  , foldImage
+  , foldImagePollster
   , foldInstanceFlavor
   , foldInstanceVCPU
   , foldInstanceRAM
   , foldInstanceDisk
+  , foldIP
+  , foldSnapshot
     -- * Utilities
   , FoldResult
   , Acc(..), PFold(..), pFold, pFoldStream
@@ -48,12 +52,16 @@ import           Control.PFold
 
 type family FoldResult x where
   FoldResult PDCPU            = Word64
-  FoldResult PDVolume         = Word64
-  FoldResult PDSSD            = Word64
+  FoldResult PDVolume         = Map PFValue32 Word64
+  FoldResult PDImage          = Map PFValue32 Word64
+  FoldResult PDImagePollster  = Map PFValue64 Word64
+  FoldResult PDIP             = Map PFIPAlloc Word64
+  FoldResult PDSSD            = Map PFValue32 Word64
   FoldResult PDInstanceVCPU   = Map PFValue32 Word64
   FoldResult PDInstanceRAM    = Map PFValue32 Word64
   FoldResult PDInstanceDisk   = Map PFValue32 Word64
   FoldResult PDInstanceFlavor = Map PFValueText Word64
+  FoldResult PDSnapshot       = Map PFValue32 Word64
 
 -- Fold ------------------------------------------------------------------------
 
@@ -82,18 +90,45 @@ foldSSD window = PFold step bEvent (eEvent window)
         go end acc (Just x) = M.insertWith (+) (x ^. value) (end - x ^. time) acc
         go _   acc  Nothing = acc
 
+foldImage :: Window -> PFold (Timed PDImage) (FoldResult PDImage)
+foldImage window = PFold step bEvent (eEvent window)
+  where -- Stop folding as soon as the image is deleted
+        step (More (prev,acc)) (Timed end (PDImage _ ImageDelete _ _))
+          = Term (Nothing, go end acc prev)
+        step a x = sEvent window a x
+
+        -- Adds the duration up until image delete
+        go end acc (Just x) = M.insertWith (+) (x ^. value) (end - x ^. time) acc
+        go _   acc  Nothing = acc
+
+foldSnapshot :: Window -> PFold (Timed PDSnapshot) (FoldResult PDSnapshot)
+foldSnapshot window = PFold step bEvent (eEvent window)
+  where -- Stop folding as soon as the snapshot is deleted
+        step (More (prev,acc)) (Timed end (PDSnapshot _ SnapshotDelete _ _))
+          = Term (Nothing, go end acc prev)
+        step a x = sEvent window a x
+
+        -- Adds the duration up until snapshot delete
+        go end acc (Just x) = M.insertWith (+) (x ^. value) (end - x ^. time) acc
+        go _   acc  Nothing = acc
+
 foldInstanceFlavor :: L.Fold (Timed PDInstanceFlavor) (FoldResult PDInstanceFlavor)
-foldInstanceFlavor =  L.Fold sPollster bPollster snd
+foldInstanceFlavor =  L.Fold sGaugePollster bGaugePollster snd
 
 foldInstanceVCPU   :: L.Fold (Timed PDInstanceVCPU) (FoldResult PDInstanceVCPU)
-foldInstanceVCPU   =  L.Fold sPollster bPollster snd
+foldInstanceVCPU   =  L.Fold sGaugePollster bGaugePollster snd
 
 foldInstanceRAM    :: L.Fold (Timed PDInstanceRAM) (FoldResult PDInstanceRAM)
-foldInstanceRAM    =  L.Fold sPollster bPollster snd
+foldInstanceRAM    =  L.Fold sGaugePollster bGaugePollster snd
 
 foldInstanceDisk   :: L.Fold (Timed PDInstanceDisk) (FoldResult PDInstanceDisk)
-foldInstanceDisk   =  L.Fold sPollster bPollster snd
+foldInstanceDisk   =  L.Fold sGaugePollster bGaugePollster snd
 
+foldImagePollster  :: L.Fold (Timed PDImagePollster) (FoldResult PDImagePollster)
+foldImagePollster  =  L.Fold sGaugePollster bGaugePollster snd
+
+foldIP :: Window ->  L.Fold (Timed PDIP) (FoldResult PDIP)
+foldIP window = L.Fold (sEvent window) bEvent (eEvent window)
 
 -- Utilities -------------------------------------------------------------------
 
@@ -139,20 +174,19 @@ bCumulative = (Nothing, 0)
 eCumulative (Just (first, latest), acc) = acc + latest - first
 eCumulative (_, acc)                    = acc
 
-
-type APollster x = ( Maybe (Timed x)          -- latest
-                   , Map (PFValue x) Word64 ) -- accumulated map
+type AGaugePollster x = ( Maybe (Timed x)          -- latest
+                        , Map (PFValue x) Word64 ) -- accumulated map
 
 -- | Finds the length of time allocated to each "state" of the resource.
 --   e.g. time a @Volume@ spent at 10GB, then at 20GB (if resized), etc.
-sPollster :: (Valued x, Ord (PFValue x))
-          => APollster x -> Timed x -> APollster x
-sPollster (Nothing,            acc) x =  (Just x, acc)
-sPollster (Just (Timed t1 v1), acc) x@(Timed t2 _)
+sGaugePollster :: (Valued x, Ord (PFValue x))
+          => AGaugePollster x -> Timed x -> AGaugePollster x
+sGaugePollster (Nothing,            acc) x =  (Just x, acc)
+sGaugePollster (Just (Timed t1 v1), acc) x@(Timed t2 _)
   = let delta = t2 - t1
     in  (Just x, M.insertWith (+) (v1 ^. value) (fromIntegral delta) acc)
 
-bPollster = (Nothing, M.empty)
+bGaugePollster = (Nothing, M.empty)
 
 
 type AEvent x = Acc ( Maybe (Timed x)          -- latest
@@ -178,7 +212,7 @@ sEvent (start, end) (More (Just prev, acc)) x
 
 bEvent = More (Nothing, M.empty)
 
-eEvent (start, end) = M.foldlWithKey (\a k v -> a + (fromIntegral k * v)) 0 . go . unwrapAcc
+eEvent (start, end) = go . unwrapAcc
   where -- deal with the dangling last event
         go (Just x, acc)
           | d <- end - s x, d > 0 = insertEvent x d acc

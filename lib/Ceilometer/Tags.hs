@@ -13,8 +13,9 @@
 
 module Ceilometer.Tags where
 
-import Data.Text
-import Vaultaire.Types
+import           Data.Maybe
+import           Data.Text
+import           Vaultaire.Types
 
 keyMetricName = pack "metric_name"
 keyTenancyID  = pack "project_id"
@@ -34,6 +35,7 @@ valImage          = pack "image.size"
 valInstanceFlavor = pack "instance_flavor"
 valInstanceRAM    = pack "instance_ram"
 valInstanceVCPU   = pack "instance_vcpus"
+valInstanceDisk   = pack "instance_disk"
 valNeutronIn      = pack "network.incoming.bytes"
 valNeutronOut     = pack "network.outgoing.bytes"
 valSnapshot       = pack "snapshot.size"
@@ -45,6 +47,7 @@ valVolumeFastId  = pack "f7797fba-2ce2-4d19-a607-29f4bc2acb3f"
 lookupMetricName = lookupSource keyMetricName
 lookupEvent      = lookupSource keyEvent
 lookupVolumeType = lookupSource keyVolumeType
+isEvent          = maybe True (== valTrue) . lookupEvent
 
 sourceIsBlock, sourceIsFast :: SourceDict -> Bool
 sourceIsBlock sd

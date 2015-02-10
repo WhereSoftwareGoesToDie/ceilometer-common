@@ -34,11 +34,11 @@ import           Data.Text           (Text)
 import           Data.Typeable
 import           Data.Word
 
-import           Ceilometer.Tags
 import           Ceilometer.Fold
-import           Ceilometer.Types
 import           Ceilometer.Tags
+import           Ceilometer.Types
 import           Vaultaire.Types
+
 
 inferPrism :: forall a. Typeable a
            => Env -> Maybe (APrism' Word64 a)
@@ -79,6 +79,26 @@ inferPrismFold (Env fm sd (TimeStamp s) (TimeStamp e)) = do
          Refl <- eqT :: Maybe (a :~: PDInstanceRAM)
          Just (pInstanceRAM, fInstanceRAM)
 
+     | name == valInstanceDisk -> do
+        Refl <- eqT :: Maybe (a :~: PDInstanceDisk)
+        Just (pInstanceDisk, fInstanceDisk)
+
+     | name == valImage && isEvent sd -> do
+        Refl <- eqT :: Maybe (a :~: PDImage)
+        Just (pImage, fImage s e)
+
+     | name == valImage && not (isEvent sd) -> do
+        Refl <- eqT :: Maybe (a :~: PDImagePollster)
+        Just (pImagePollster, fImagePollster)
+
+     | name == valSnapshot -> do
+        Refl <- eqT :: Maybe (a :~: PDSnapshot)
+        Just (pSnapshot, fSnapshot s e)
+
+     | name == valIP -> do
+        Refl <- eqT :: Maybe (a :~: PDIP)
+        Just (pIP, fIP s e)
+
      | otherwise -> Nothing
 
 -- "Universalised" versions of prisms and folds
@@ -101,9 +121,29 @@ pInstanceVCPU = prCompoundPollster . pdInstanceVCPU
 pInstanceRAM :: APrism' Word64 PDInstanceRAM
 pInstanceRAM = prCompoundPollster . pdInstanceRAM
 
+pInstanceDisk :: APrism' Word64 PDInstanceDisk
+pInstanceDisk = prCompoundPollster . pdInstanceDisk
+
+pImage :: APrism' Word64 PDImage
+pImage = prCompoundEvent . pdImage
+
+pImagePollster :: APrism' Word64 PDImagePollster
+pImagePollster = prSimple . pdImagePollster
+
+pSnapshot :: APrism' Word64 PDSnapshot
+pSnapshot = prCompoundEvent . pdSnapshot
+
+pIP :: APrism' Word64 PDIP
+pIP = prCompoundEvent . pdIP
+
 fCPU            = generalizeFold (timewrapFold foldCPU)
 fVolume s e     = foldVolume (s,e)
 fSSD s e        = foldSSD (s,e)
 fInstanceFlavor = generalizeFold foldInstanceFlavor
 fInstanceVCPU   = generalizeFold foldInstanceVCPU
 fInstanceRAM    = generalizeFold foldInstanceRAM
+fInstanceDisk   = generalizeFold foldInstanceDisk
+fImage s e      = foldImage (s,e)
+fImagePollster  = generalizeFold foldImagePollster
+fSnapshot s e   = foldSnapshot (s,e)
+fIP       s e   = generalizeFold $ foldIP (s,e)
