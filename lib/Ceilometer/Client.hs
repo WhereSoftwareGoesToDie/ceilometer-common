@@ -37,6 +37,7 @@ import qualified Data.Traversable    as T
 import           Data.Typeable
 import           Data.Word
 import           Pipes
+import qualified Pipes.Prelude       as P
 
 import           Ceilometer.Fold     as C
 import           Ceilometer.Infer    as C
@@ -89,12 +90,13 @@ decodeWith p = forever $ do
   SimplePoint _ (TimeStamp t) v <- await
   yield $ T.sequence $ Timed t $ v ^? p
 
+-- | Ignores the failed parses that flows downstream.
+--
 ignore :: Monad m => Pipe (Maybe x) x m r
-ignore = forever $ do
-  x <- await
-  maybe (return ()) yield x
+ignore = P.concat
 
--- TODO "blow up" more gracefully, log?
+-- | Abort the entire pipeline when encoutering malformed data in the Vault.
+--
 blowup :: Monad m => Pipe (Maybe x) x m r
 blowup = forever $ do
   x <- await

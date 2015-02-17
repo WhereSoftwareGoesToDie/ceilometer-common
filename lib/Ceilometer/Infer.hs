@@ -29,12 +29,12 @@ module Ceilometer.Infer
   ) where
 
 import           Control.Applicative
+import           Control.Monad
 import           Control.Lens
 import           Data.Text           (Text)
 import           Data.Typeable
 import           Data.Word
 
-import           Ceilometer.Tags
 import           Ceilometer.Fold
 import           Ceilometer.Types
 import           Ceilometer.Tags
@@ -55,17 +55,27 @@ inferPrismFold :: forall a. Typeable a
                => Env -> Maybe (APrism' Word64 a, PFold (Timed a) (FoldResult a))
 inferPrismFold (Env fm sd (TimeStamp s) (TimeStamp e)) = do
   name <- lookupMetricName sd
+  
+  -- metric_name=cpu
   if | name == valCPU -> do
          Refl <- eqT :: Maybe (a :~: PDCPU)
          Just (pCPU, fCPU)
 
-     | name == valVolume && sourceIsBlock sd -> do
-         Refl <- eqT :: Maybe (a :~: PDVolume)
-         Just (pVolume, fVolume s e)
+     | name == valVolume -> do
+         voltype <- lookupVolumeType sd
+         case voltype of
 
-     | name == valVolume && sourceIsFast  sd -> do
-         Refl <- eqT :: Maybe (a :~: PDSSD)
-         Just (pSSD, fSSD s e)
+           -- metric_name=volume.size volume_type=<block magic number>
+           valVolumeBlock -> do
+             Refl <- eqT :: Maybe (a :~: PDVolume)
+             Just (pVolume, fVolume s e)
+
+           -- metric_name=volume.size volume_type=<fast magic number>
+           valVolumeFast  -> do
+             Refl <- eqT :: Maybe (a :~: PDSSD)
+             Just (pSSD, fSSD s e)
+
+           _              -> mzero
 
      | name == valInstanceFlavor -> do
          Refl <- eqT :: Maybe (a :~: PDInstanceFlavor)
