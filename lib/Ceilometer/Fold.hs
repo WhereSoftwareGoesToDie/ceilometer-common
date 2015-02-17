@@ -20,16 +20,20 @@
 {-# OPTIONS -fno-warn-missing-signatures #-}
 
 module Ceilometer.Fold
-  ( -- * Resource-specific Folds
-    foldCPU
+  ( -- * Generic folds (and Decode)
+    Known(..)
+  , FoldResult(..)
+
+    -- * Low-level folds
+  , foldCPU
   , foldVolume
   , foldSSD
   , foldInstanceFlavor
   , foldInstanceVCPU
   , foldInstanceRAM
   , foldInstanceDisk
+
     -- * Utilities
-  , FoldResult
   , Acc(..), PFold(..), pFold, pFoldStream
   , generalizeFold
   , timewrapFold
@@ -40,27 +44,70 @@ import qualified Control.Foldl    as L
 import           Control.Lens     hiding (Fold, Simple)
 import           Data.Map         (Map)
 import qualified Data.Map.Strict  as M
+import           Data.Typeable
 import           Data.Word
 
 import           Ceilometer.Types
 import           Control.PFold
+import           Vaultaire.Types
 
 
-type family FoldResult x where
-  FoldResult PDCPU            = Word64
-  FoldResult PDVolume         = Word64
-  FoldResult PDSSD            = Word64
-  FoldResult PDInstanceVCPU   = Map PFValue32 Word64
-  FoldResult PDInstanceRAM    = Map PFValue32 Word64
-  FoldResult PDInstanceDisk   = Map PFValue32 Word64
-  FoldResult PDInstanceFlavor = Map PFValueText Word64
+--------------------------------------------------------------------------------
+
+-- | A universial wrapper of fold results to expose to the user.
+--
+--   For simplicity, it's not associated with the @Known@ class. If the need to do
+--   that arises, use Typeable and Constraint tricks to pattern match.
+--
+data FoldResult
+  = RSingle   Word64
+  | RMapNum  (Map PFValue32 Word64)
+  | RMapText (Map PFValueText Word64)
+
+-- | An OpenStack measured known to Ceilometer. We can determine how to decode
+--   and aggregate Vaultaire data for it.
+--
+class Known a where
+  mkPrism :: Env -> APrism' Word64 a
+  mkFold  :: Env -> PFold (Timed a) FoldResult
+
+instance Known PDCPU where
+  mkPrism _ = prSimple . pdCPU
+  mkFold  _ = after RSingle (generalizeFold (timewrapFold foldCPU))
+
+instance Known PDVolume where
+  mkPrism _ = prCompoundEvent . pdVolume
+  mkFold (Env _ _ (TimeStamp s) (TimeStamp e))
+    = after RSingle (foldVolume (s,e))
+
+instance Known PDSSD where
+  mkPrism _  = prCompoundEvent . pdSSD
+  mkFold (Env _ _ (TimeStamp s) (TimeStamp e))
+    = after RSingle (foldSSD (s,e))
+
+instance Known PDInstanceVCPU where
+  mkPrism _ = prCompoundPollster . pdInstanceVCPU
+  mkFold  _ = after RMapNum (generalizeFold foldInstanceVCPU)
+
+instance Known PDInstanceRAM where
+  mkPrism _ = prCompoundPollster . pdInstanceRAM
+  mkFold  _ = after RMapNum (generalizeFold foldInstanceRAM)
+
+instance Known PDInstanceDisk where
+  mkPrism _ = prCompoundPollster . pdInstanceDisk
+  mkFold  _ = after RMapNum (generalizeFold foldInstanceDisk)
+
+instance Known PDInstanceFlavor where
+  mkPrism (Env fm _ _ _) = prCompoundPollster . pdInstanceFlavor fm
+  mkFold _               = after RMapText (generalizeFold foldInstanceFlavor)
+
 
 -- Fold ------------------------------------------------------------------------
 
-foldCPU :: L.Fold PDCPU (FoldResult PDCPU)
+foldCPU :: L.Fold PDCPU Word64
 foldCPU = L.Fold sCumulative bCumulative eCumulative
 
-foldVolume :: Window -> PFold (Timed PDVolume) (FoldResult PDVolume)
+foldVolume :: Window -> PFold (Timed PDVolume) Word64
 foldVolume window = PFold step bEvent (eEvent window)
   where -- Stop folding as soon as the volume is deleted
         step (More (prev,acc)) (Timed end (PDVolume _ VolumeDelete _ _))
@@ -71,7 +118,7 @@ foldVolume window = PFold step bEvent (eEvent window)
         go end acc (Just x) = M.insertWith (+) (x ^. value) (end - x ^. time) acc
         go _   acc  Nothing = acc
 
-foldSSD :: Window -> PFold (Timed PDSSD) (FoldResult PDSSD)
+foldSSD :: Window -> PFold (Timed PDSSD) Word64
 foldSSD window = PFold step bEvent (eEvent window)
   where -- Stop folding as soon as the volume is deleted
         step (More (prev,acc)) (Timed end (PDSSD _ VolumeDelete _ _))
@@ -82,20 +129,23 @@ foldSSD window = PFold step bEvent (eEvent window)
         go end acc (Just x) = M.insertWith (+) (x ^. value) (end - x ^. time) acc
         go _   acc  Nothing = acc
 
-foldInstanceFlavor :: L.Fold (Timed PDInstanceFlavor) (FoldResult PDInstanceFlavor)
+foldInstanceFlavor :: L.Fold (Timed PDInstanceFlavor) (Map PFValueText Word64)
 foldInstanceFlavor =  L.Fold sPollster bPollster snd
 
-foldInstanceVCPU   :: L.Fold (Timed PDInstanceVCPU) (FoldResult PDInstanceVCPU)
+foldInstanceVCPU   :: L.Fold (Timed PDInstanceVCPU)   (Map PFValue32 Word64)
 foldInstanceVCPU   =  L.Fold sPollster bPollster snd
 
-foldInstanceRAM    :: L.Fold (Timed PDInstanceRAM) (FoldResult PDInstanceRAM)
+foldInstanceRAM    :: L.Fold (Timed PDInstanceRAM)    (Map PFValue32 Word64)
 foldInstanceRAM    =  L.Fold sPollster bPollster snd
 
-foldInstanceDisk   :: L.Fold (Timed PDInstanceDisk) (FoldResult PDInstanceDisk)
+foldInstanceDisk   :: L.Fold (Timed PDInstanceDisk)   (Map PFValue32 Word64)
 foldInstanceDisk   =  L.Fold sPollster bPollster snd
 
 
 -- Utilities -------------------------------------------------------------------
+
+after :: (y -> z) -> PFold x y -> PFold x z
+after f (PFold s b e) = PFold s b (f . e)
 
 -- | Wrap a fold that doens't depend on time with dummy times.
 --   note: useful to give a unified interface to clients (borel) while keeping

@@ -61,7 +61,20 @@ import           Ceilometer.Types.CPU
 import           Ceilometer.Types.Instance
 import           Ceilometer.Types.Volume
 import           Vaultaire.Types
+import Control.PFold
 
+
+--------------------------------------------------------------------------------
+
+-- | Information needed to parse/fold Ceilometer types, supplied by users.
+--
+data Env = Env { _flavormap  :: FlavorMap
+               , _sourcedict :: SourceDict
+               , _start      :: TimeStamp
+               , _end        :: TimeStamp }
+
+
+--------------------------------------------------------------------------------
 
 -- | Values with a TimeStamp.
 --
@@ -113,9 +126,3 @@ instance Valued PDInstanceDisk where
   value f (PDInstanceDisk s x) = PDInstanceDisk s <$> f x
 
 
--- | Information needed to parse/fold Ceilometer types, supplied by users.
---
-data    Env       = Env { _flavormap  :: FlavorMap
-                        , _sourcedict :: SourceDict
-                        , _start      :: TimeStamp
-                        , _end        :: TimeStamp }
