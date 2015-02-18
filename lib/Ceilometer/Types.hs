@@ -10,13 +10,12 @@
 -- This module exports the public-facing Ceilometer types
 -- and the interface for them.
 --
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveFoldable     #-}
-{-# LANGUAGE DeriveFunctor      #-}
-{-# LANGUAGE DeriveTraversable  #-}
-{-# LANGUAGE TemplateHaskell    #-}
-{-# LANGUAGE TypeFamilies       #-}
-{-# LANGUAGE TypeOperators      #-}
+{-# LANGUAGE DeriveFoldable    #-}
+{-# LANGUAGE DeriveFunctor     #-}
+{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE TypeOperators     #-}
 
 {-# OPTIONS -fno-warn-unused-binds #-}
 
@@ -60,8 +59,21 @@ import           Ceilometer.Types.Base
 import           Ceilometer.Types.CPU
 import           Ceilometer.Types.Instance
 import           Ceilometer.Types.Volume
+import           Control.PFold
 import           Vaultaire.Types
 
+
+--------------------------------------------------------------------------------
+
+-- | Information needed to parse/fold Ceilometer types, supplied by users.
+--
+data Env = Env { _flavormap  :: FlavorMap
+               , _sourcedict :: SourceDict
+               , _start      :: TimeStamp
+               , _end        :: TimeStamp }
+
+
+--------------------------------------------------------------------------------
 
 -- | Values with a TimeStamp.
 --
@@ -111,11 +123,3 @@ instance Valued PDInstanceRAM where
 instance Valued PDInstanceDisk where
   type PFValue PDInstanceDisk  = PFValue32
   value f (PDInstanceDisk s x) = PDInstanceDisk s <$> f x
-
-
--- | Information needed to parse/fold Ceilometer types, supplied by users.
---
-data    Env       = Env { _flavormap  :: FlavorMap
-                        , _sourcedict :: SourceDict
-                        , _start      :: TimeStamp
-                        , _end        :: TimeStamp }
