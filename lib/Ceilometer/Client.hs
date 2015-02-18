@@ -6,9 +6,6 @@
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
 
-
-{-# LANGUAGE AllowAmbiguousTypes #-}
-
 --
 -- Copyright © 2013-2015 Anchor Systems, Pty Ltd and Others
 --
@@ -45,8 +42,6 @@ import           Ceilometer.Fold     as C
 import           Ceilometer.Tags
 import           Ceilometer.Types    as C
 import           Vaultaire.Types
-
-type Result = Int
 
 decodeFold
   :: (Monad m, Applicative m)
