@@ -82,17 +82,18 @@ foldSSD window = PFold step bEvent (eEvent window)
         go end acc (Just x) = M.insertWith (+) (x ^. value) (end - x ^. time) acc
         go _   acc  Nothing = acc
 
+
 foldInstanceFlavor :: L.Fold (Timed PDInstanceFlavor) (FoldResult PDInstanceFlavor)
-foldInstanceFlavor =  L.Fold sPollster bPollster snd
+foldInstanceFlavor =  L.Fold (sPollster isInstanceFlavorBillable) bPollster snd
 
 foldInstanceVCPU   :: L.Fold (Timed PDInstanceVCPU) (FoldResult PDInstanceVCPU)
-foldInstanceVCPU   =  L.Fold sPollster bPollster snd
+foldInstanceVCPU   =  L.Fold (sPollster isInstanceVCPUBillable)   bPollster snd
 
 foldInstanceRAM    :: L.Fold (Timed PDInstanceRAM) (FoldResult PDInstanceRAM)
-foldInstanceRAM    =  L.Fold sPollster bPollster snd
+foldInstanceRAM    =  L.Fold (sPollster isInstanceRAMBillable)    bPollster snd
 
 foldInstanceDisk   :: L.Fold (Timed PDInstanceDisk) (FoldResult PDInstanceDisk)
-foldInstanceDisk   =  L.Fold sPollster bPollster snd
+foldInstanceDisk   =  L.Fold (sPollster isInstanceDiskBillable)   bPollster snd
 
 
 -- Utilities -------------------------------------------------------------------
@@ -146,14 +147,17 @@ type APollster x = ( Maybe (Timed x)          -- latest
 -- | Finds the length of time allocated to each "state" of the resource.
 --   e.g. time a @Volume@ spent at 10GB, then at 20GB (if resized), etc.
 sPollster :: (Valued x, Ord (PFValue x))
-          => APollster x -> Timed x -> APollster x
-sPollster (Nothing,            acc) x =  (Just x, acc)
-sPollster (Just (Timed t1 v1), acc) x@(Timed t2 _)
-  = let delta = t2 - t1
-    in  (Just x, M.insertWith (+) (v1 ^. value) (fromIntegral delta) acc)
+          => (x -> Bool) -> APollster x -> Timed x -> APollster x
+sPollster _          (Nothing,            acc) x =  (Just x, acc)
+sPollster isBillable (Just (Timed t1 v1), acc) x@(Timed t2 _)
+  = let delta = t2 - t1 in
+    if isBillable v1 then
+      (Just x, M.insertWith (+) (v1 ^. value) (fromIntegral delta) acc)
+    else
+      (Just x, acc)
+
 
 bPollster = (Nothing, M.empty)
-
 
 type AEvent x = Acc ( Maybe (Timed x)          -- latest
                     , Map (PFValue x) Word64 ) -- accumulated map

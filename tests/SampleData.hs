@@ -131,14 +131,13 @@ flavorPD2 = PDInstanceFlavor InstancePaused flavorID2
 flavorPDs = [ flavorPD0, flavorPD1, flavorPD2 ]
 
 flavorTimedPDs = [ Timed testS flavorPD1
-                 , Timed (testS + 2) flavorPD1
+                 , Timed (testS + 2) flavorPD0
                  , Timed (testS + 7) flavorPD2
-                 , Timed (testS + 11) flavorPD1
-                 , Timed (testS + 13) flavorPD1 ]
+                 , Timed (testS + 11) flavorPD0
+                 , Timed (testS + 13) flavorPD0 ]
 
 flavorTimedPDsResult :: [(PFValue PDInstanceFlavor, Word64)]
-flavorTimedPDsResult = [ (flavorID1, 9)
-                       , (flavorID2, 4) ]
+flavorTimedPDsResult = [ (flavorID0, 7), (flavorID1, 2) ]
 
 -- CPU -------------------------------------------------------------------------
 
