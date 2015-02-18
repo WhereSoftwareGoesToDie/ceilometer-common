@@ -44,7 +44,6 @@ import qualified Control.Foldl    as L
 import           Control.Lens     hiding (Fold, Simple)
 import           Data.Map         (Map)
 import qualified Data.Map.Strict  as M
-import           Data.Typeable
 import           Data.Word
 
 import           Ceilometer.Types

@@ -9,18 +9,16 @@
 -- /Description/
 -- This module defines the Ceilometer CPU type.
 
-{-# LANGUAGE DeriveDataTypeable #-}
 module Ceilometer.Types.CPU
   ( PDCPU(..), pdCPU
   ) where
 
 import           Control.Lens
-import           Data.Typeable
 
 import           Ceilometer.Types.Base
 
 newtype PDCPU = PDCPU { _pdCPUVal :: PFValue64 }
-     deriving (Show, Read, Eq, Typeable)
+     deriving (Show, Read, Eq)
 
 pdCPU :: Iso' PRSimple PDCPU
 pdCPU = iso (PDCPU . _prSimpleVal) (PRSimple . _pdCPUVal)

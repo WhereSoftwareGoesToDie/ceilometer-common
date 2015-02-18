@@ -13,8 +13,8 @@
 
 module Ceilometer.Tags where
 
-import Data.Text
-import Vaultaire.Types
+import           Data.Text
+import           Vaultaire.Types
 
 keyMetricName = pack "metric_name"
 keyTenancyID  = pack "project_id"

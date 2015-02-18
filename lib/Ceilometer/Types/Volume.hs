@@ -9,10 +9,9 @@
 -- /Description/
 -- This module defines the Ceilometer Volume type.
 --
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE MultiWayIf         #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE TemplateHaskell    #-}
+{-# LANGUAGE MultiWayIf        #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 module Ceilometer.Types.Volume
   ( -- * Fields
@@ -27,7 +26,6 @@ import           Control.Applicative
 import           Control.Lens
 import           Data.Binary           (Word8)
 import           Data.Text             (Text)
-import           Data.Typeable
 
 import           Ceilometer.Types.Base
 import           Ceilometer.Types.TH
@@ -62,14 +60,14 @@ data PDVolume = PDVolume
   , _volumeVerb     :: PFVolumeVerb
   , _volumeEndpoint :: PFEndpoint
   , _volumeVal      :: PFValue32 }
-  deriving (Eq, Show, Read, Typeable)
+  deriving (Eq, Show, Read)
 
 data PDSSD = PDSSD
   { _ssdStatus   :: PFVolumeStatus
   , _ssdVerb     :: PFVolumeVerb
   , _ssdEndpoint :: PFEndpoint
   , _ssdVal      :: PFValue32 }
-  deriving (Eq, Show, Read, Typeable)
+  deriving (Eq, Show, Read)
 
 $(makeLenses ''PDVolume)
 $(makeLenses ''PDSSD)

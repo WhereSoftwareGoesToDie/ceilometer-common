@@ -9,9 +9,8 @@
 -- /Description/
 -- This module defines the Ceilometer Instance-related types.
 --
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE RankNTypes         #-}
-{-# LANGUAGE TemplateHaskell    #-}
+{-# LANGUAGE RankNTypes      #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Ceilometer.Types.Instance
   ( PFInstanceStatus(..), pfInstanceStatus
@@ -30,7 +29,6 @@ import           Data.Binary           (Word32, Word64, Word8)
 import           Data.Bits
 import           Data.ByteString       (ByteString)
 import qualified Data.Text.Encoding    as T
-import           Data.Typeable
 
 import           Ceilometer.Types.Base
 import           Ceilometer.Types.TH
@@ -63,7 +61,7 @@ $(declarePF    "Instance"
 -- BOILERPLATE GALORE
 
 data PDInstanceVCPU = PDInstanceVCPU PFInstanceStatus PFValue32
-     deriving (Eq, Show, Read, Typeable)
+     deriving (Eq, Show, Read)
 
 pdInstanceVCPU :: Prism' PRCompoundPollster PDInstanceVCPU
 pdInstanceVCPU = prism' pretty parse
@@ -77,7 +75,7 @@ pdInstanceVCPU = prism' pretty parse
             (status ^. re pfInstanceStatus)
 
 data PDInstanceRAM = PDInstanceRAM PFInstanceStatus PFValue32
-     deriving (Eq, Show, Read, Typeable)
+     deriving (Eq, Show, Read)
 
 pdInstanceRAM :: Prism' PRCompoundPollster PDInstanceRAM
 pdInstanceRAM = prism' pretty parse
@@ -91,7 +89,7 @@ pdInstanceRAM = prism' pretty parse
             (status ^. re pfInstanceStatus)
 
 data PDInstanceDisk = PDInstanceDisk PFInstanceStatus PFValue32
-     deriving (Eq, Show, Read, Typeable)
+     deriving (Eq, Show, Read)
 
 pdInstanceDisk :: Prism' PRCompoundPollster PDInstanceDisk
 pdInstanceDisk = prism' pretty parse
@@ -105,7 +103,7 @@ pdInstanceDisk = prism' pretty parse
             (status ^. re pfInstanceStatus)
 
 data PDInstanceFlavor = PDInstanceFlavor PFInstanceStatus PFValueText
-     deriving (Eq, Show, Read, Typeable)
+     deriving (Eq, Show, Read)
 
 pdInstanceFlavor :: FlavorMap -> Prism' PRCompoundPollster PDInstanceFlavor
 pdInstanceFlavor fm = prism' pretty parse

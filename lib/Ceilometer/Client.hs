@@ -1,10 +1,10 @@
 {-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE MultiWayIf          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE MultiWayIf #-}
 
 
 {-# LANGUAGE AllowAmbiguousTypes #-}
@@ -37,13 +37,12 @@ import           Control.Lens
 import           Control.Monad
 import           Data.Maybe
 import qualified Data.Traversable    as T
-import           Data.Typeable
 import           Data.Word
 import           Pipes
 import qualified Pipes.Prelude       as P
 
-import           Ceilometer.Tags
 import           Ceilometer.Fold     as C
+import           Ceilometer.Tags
 import           Ceilometer.Types    as C
 import           Vaultaire.Types
 
@@ -57,39 +56,39 @@ decodeFold
   -> m (Maybe b)                -- ^ Result
 
 decodeFold f env@(Env _ sd _ _) raw = do
-  x <- return $ do
-    name <- lookupMetricName sd
+  let x = do
+        name <- lookupMetricName sd
 
-    if | name == valCPU
-         -> return (f <$> (decodeFold_ (undefined :: proxy PDCPU) env raw))
+        if | name == valCPU
+             -> return (f <$> decodeFold_ (undefined :: proxy PDCPU) env raw)
 
-       | name == valVolume -> do
-         voltype <- lookupVolumeType sd
+           | name == valVolume -> do
+             voltype <- lookupVolumeType sd
 
-         if | voltype == valVolumeBlock
-              -> return (f <$> (decodeFold_ (undefined :: proxy PDVolume) env raw))
+             if | voltype == valVolumeBlock
+                  -> return (f <$> decodeFold_ (undefined :: proxy PDVolume) env raw)
 
-            | voltype == valVolumeFast
-              -> return (f <$> (decodeFold_ (undefined :: proxy PDSSD) env raw))
+                | voltype == valVolumeFast
+                  -> return (f <$> decodeFold_ (undefined :: proxy PDSSD) env raw)
 
-            | otherwise -> mzero
+                | otherwise -> mzero
 
-       | name == valInstanceFlavor -> do
-         compound <- lookupCompound sd
-         event    <- lookupEvent    sd
+           | name == valInstanceFlavor -> do
+             compound <- lookupCompound sd
+             event    <- lookupEvent    sd
 
-         if | compound == valTrue && event == valFalse
-              -> return (f <$> (decodeFold_ (undefined :: proxy PDInstanceFlavor) env raw))
+             if | compound == valTrue && event == valFalse
+                  -> return (f <$> decodeFold_ (undefined :: proxy PDInstanceFlavor) env raw)
 
-            | otherwise -> mzero
+                | otherwise -> mzero
 
-       | name == valInstanceVCPU
-         -> return (f <$> (decodeFold_ (undefined :: proxy PDInstanceVCPU) env raw))
+           | name == valInstanceVCPU
+             -> return (f <$> decodeFold_ (undefined :: proxy PDInstanceVCPU) env raw)
 
-       | name == valInstanceRAM
-         -> return (f <$> (decodeFold_ (undefined :: proxy PDInstanceRAM) env raw))
+           | name == valInstanceRAM
+             -> return (f <$> decodeFold_ (undefined :: proxy PDInstanceRAM) env raw)
 
-       | otherwise -> mzero
+           | otherwise -> mzero
   T.sequence x
 
 decodeFold_
@@ -107,14 +106,14 @@ decode
   -> Pipe SimplePoint (Maybe (Timed a)) m ()
 decode env = forever $ do
   SimplePoint _ (TimeStamp t) v <- await
-  yield $ T.sequence $ Timed t $ v ^? (clonePrism $ mkPrism env)
+  yield $ T.sequence $ Timed t $ v ^? clonePrism (mkPrism env)
 
 foldDecoded
   :: (Known a, Monad m)
   => Env
   -> Producer (Timed a) m ()
   -> m FoldResult
-foldDecoded env raw = pFoldStream (mkFold env) raw
+foldDecoded env = pFoldStream (mkFold env) raw
 
 -- | Abort the entire pipeline when encoutering malformed data in the Vault.
 --
