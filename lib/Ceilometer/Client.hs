@@ -50,26 +50,25 @@ type Result = Int
 
 decodeFold
   :: (Monad m, Applicative m)
-  => (FoldResult -> b)
-  -> Env                        -- ^ @SourceDict@ to verify the above claim.
+  => Env                        -- ^ @SourceDict@ to verify the above claim.
   -> Producer SimplePoint m ()  -- ^ The raw data points to parse and aggregate.
-  -> m (Maybe b)                -- ^ Result
+  -> m (Maybe FoldResult)       -- ^ Result
 
-decodeFold f env@(Env _ sd _ _) raw = do
+decodeFold env@(Env _ sd _ _) raw = do
   let x = do
         name <- lookupMetricName sd
 
         if | name == valCPU
-             -> return (f <$> decodeFold_ (undefined :: proxy PDCPU) env raw)
+             -> return (decodeFold_ (undefined :: proxy PDCPU) env raw)
 
            | name == valVolume -> do
              voltype <- lookupVolumeType sd
 
              if | voltype == valVolumeBlock
-                  -> return (f <$> decodeFold_ (undefined :: proxy PDVolume) env raw)
+                  -> return (decodeFold_ (undefined :: proxy PDVolume) env raw)
 
                 | voltype == valVolumeFast
-                  -> return (f <$> decodeFold_ (undefined :: proxy PDSSD) env raw)
+                  -> return (decodeFold_ (undefined :: proxy PDSSD) env raw)
 
                 | otherwise -> mzero
 
@@ -78,15 +77,15 @@ decodeFold f env@(Env _ sd _ _) raw = do
              event    <- lookupEvent    sd
 
              if | compound == valTrue && event == valFalse
-                  -> return (f <$> decodeFold_ (undefined :: proxy PDInstanceFlavor) env raw)
+                  -> return (decodeFold_ (undefined :: proxy PDInstanceFlavor) env raw)
 
                 | otherwise -> mzero
 
            | name == valInstanceVCPU
-             -> return (f <$> decodeFold_ (undefined :: proxy PDInstanceVCPU) env raw)
+             -> return (decodeFold_ (undefined :: proxy PDInstanceVCPU) env raw)
 
            | name == valInstanceRAM
-             -> return (f <$> decodeFold_ (undefined :: proxy PDInstanceRAM) env raw)
+             -> return (decodeFold_ (undefined :: proxy PDInstanceRAM) env raw)
 
            | otherwise -> mzero
   T.sequence x
@@ -113,7 +112,7 @@ foldDecoded
   => Env
   -> Producer (Timed a) m ()
   -> m FoldResult
-foldDecoded env = pFoldStream (mkFold env) raw
+foldDecoded env = pFoldStream (mkFold env)
 
 -- | Abort the entire pipeline when encoutering malformed data in the Vault.
 --
