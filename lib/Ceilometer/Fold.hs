@@ -130,7 +130,7 @@ foldCPU :: L.Fold PDCPU Word64
 foldCPU = L.Fold sCumulative bCumulative eCumulative
 
 foldVolume :: Window -> PFold (Timed PDVolume) Word64
-foldVolume window = PFold step bEvent (eEvent window)
+foldVolume window = PFold step bEvent (eEvent window standardEventFolder)
   where -- Stop folding as soon as the volume is deleted
         step (More (prev,acc)) (Timed end (PDVolume _ VolumeDelete _ _))
           = Term (Nothing, go end acc prev)
@@ -141,7 +141,7 @@ foldVolume window = PFold step bEvent (eEvent window)
         go _   acc  Nothing = acc
 
 foldSSD :: Window -> PFold (Timed PDSSD) Word64
-foldSSD window = PFold step bEvent (eEvent window)
+foldSSD window = PFold step bEvent (eEvent window standardEventFolder)
   where -- Stop folding as soon as the volume is deleted
         step (More (prev,acc)) (Timed end (PDSSD _ VolumeDelete _ _))
           = Term (Nothing, go end acc prev)
@@ -152,7 +152,7 @@ foldSSD window = PFold step bEvent (eEvent window)
         go _   acc  Nothing = acc
 
 foldImage :: Window -> PFold (Timed PDImage) Word64
-foldImage window = PFold step bEvent (eEvent window)
+foldImage window = PFold step bEvent (eEvent window standardEventFolder)
   where -- Stop folding as soon as the image is deleted
         step (More (prev,acc)) (Timed end (PDImage _ ImageDelete _ _))
           = Term (Nothing, go end acc prev)
@@ -163,7 +163,7 @@ foldImage window = PFold step bEvent (eEvent window)
         go _   acc  Nothing = acc
 
 foldSnapshot :: Window -> PFold (Timed PDSnapshot) Word64
-foldSnapshot window = PFold step bEvent (eEvent window)
+foldSnapshot window = PFold step bEvent (eEvent window standardEventFolder)
   where -- Stop folding as soon as the snapshot is deleted
         step (More (prev,acc)) (Timed end (PDSnapshot _ SnapshotDelete _ _))
           = Term (Nothing, go end acc prev)
@@ -174,7 +174,7 @@ foldSnapshot window = PFold step bEvent (eEvent window)
         go _   acc  Nothing = acc
 
 foldIP :: Window ->  PFold (Timed PDIP) Word64
-foldIP window = PFold step bEvent (eIPEvent window)
+foldIP window = PFold step bEvent (eEvent window ipEventFolder)
   where -- Stop folding as soon as the IP is deleted
         step (More (prev,acc)) (Timed end (PDIP _ IPDelete _ _))
           = Term (Nothing, go end acc prev)
@@ -285,18 +285,14 @@ sEvent (start, end) (More (Just prev, acc)) x
 
 bEvent = More (Nothing, M.empty)
 
-eEvent (start, end) = M.foldlWithKey (\a k v -> a + (fromIntegral k * v)) 0 . go . unwrapAcc
+eEvent (start, end) f = M.foldlWithKey f 0 . go . unwrapAcc
   where -- deal with the dangling last event
         go (Just x, acc)
           | d <- end - s x, d > 0 = insertEvent x d acc
         go a@_                          = snd a
         s x = max start (x ^. time)
 
-eIPEvent (start, end) = M.foldlWithKey (\a _ v -> a + v) 0 . go . unwrapAcc
-  where -- deal with the dangling last event
-        go (Just x, acc)
-          | d <- end - s x, d > 0 = insertEvent x d acc
-        go a@_                          = snd a
-        s x = max start (x ^. time)
+standardEventFolder a k v = a + (fromIntegral k * v)
+ipEventFolder       a _ v = a + v
 
 insertEvent x = M.insertWith (+) (x ^. value)

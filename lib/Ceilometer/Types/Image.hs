@@ -61,12 +61,6 @@ data PDImage = PDImage
 
 $(makeLenses ''PDImage)
 
-newtype PDImagePollster = PDImagePollster { _pdImagePollsterVal :: PFValue64 }
-     deriving (Show, Read, Eq, Typeable)
-
-pdImagePollster :: Iso' PRSimple PDImagePollster
-pdImagePollster = iso (PDImagePollster . _prSimpleVal) (PRSimple . _pdImagePollsterVal)
-
 pdImage :: Prism' PRCompoundEvent PDImage
 pdImage = prism' pretty parse
   where parse raw
@@ -81,3 +75,9 @@ pdImage = prism' pretty parse
             (ep     ^. re pfEndpoint)
             (verb   ^. re pfImageVerb)
             (status ^. re pfImageStatus)
+
+newtype PDImagePollster = PDImagePollster { _pdImagePollsterVal :: PFValue64 }
+     deriving (Show, Read, Eq, Typeable)
+
+pdImagePollster :: Iso' PRSimple PDImagePollster
+pdImagePollster = iso (PDImagePollster . _prSimpleVal) (PRSimple . _pdImagePollsterVal)
