@@ -13,6 +13,7 @@
 
 module Ceilometer.Tags where
 
+import           Data.Maybe
 import           Data.Text
 import           Vaultaire.Types
 
@@ -46,3 +47,4 @@ lookupMetricName = lookupSource keyMetricName
 lookupEvent      = lookupSource keyEvent
 lookupVolumeType = lookupSource keyVolumeType
 lookupCompound   = lookupSource keyCompound
+isEvent          = maybe False (== valTrue) . lookupEvent

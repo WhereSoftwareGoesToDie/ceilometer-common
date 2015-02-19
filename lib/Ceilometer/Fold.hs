@@ -28,11 +28,14 @@ module Ceilometer.Fold
   , foldCPU
   , foldVolume
   , foldSSD
+  , foldImage
+  , foldImagePollster
   , foldInstanceFlavor
   , foldInstanceVCPU
   , foldInstanceRAM
   , foldInstanceDisk
-
+  , foldIP
+  , foldSnapshot
     -- * Utilities
   , Acc(..), PFold(..), pFold, pFoldStream
   , generalizeFold
@@ -60,8 +63,9 @@ import           Vaultaire.Types
 --
 data FoldResult
   = RSingle   Word64
-  | RMapNum  (Map PFValue32 Word64)
-  | RMapText (Map PFValueText Word64)
+  | RMapNum32 (Map PFValue32 Word64)
+  | RMapNum64 (Map PFValue64 Word64)
+  | RMapText  (Map PFValueText Word64)
 
 -- | An OpenStack measured known to Ceilometer. We can determine how to decode
 --   and aggregate Vaultaire data for it.
@@ -74,6 +78,10 @@ instance Known PDCPU where
   mkPrism _ = prSimple . pdCPU
   mkFold  _ = after RSingle (generalizeFold (timewrapFold foldCPU))
 
+instance Known PDImagePollster where
+  mkPrism _ = prSimple . pdImagePollster
+  mkFold  _ = after RMapNum64 (generalizeFold foldImagePollster)
+
 instance Known PDVolume where
   mkPrism _ = prCompoundEvent . pdVolume
   mkFold (Env _ _ (TimeStamp s) (TimeStamp e))
@@ -84,17 +92,32 @@ instance Known PDSSD where
   mkFold (Env _ _ (TimeStamp s) (TimeStamp e))
     = after RSingle (foldSSD (s,e))
 
+instance Known PDImage where
+  mkPrism _  = prCompoundEvent . pdImage
+  mkFold (Env _ _ (TimeStamp s) (TimeStamp e))
+    = after RSingle (foldImage (s,e))
+
+instance Known PDSnapshot where
+  mkPrism _  = prCompoundEvent . pdSnapshot
+  mkFold (Env _ _ (TimeStamp s) (TimeStamp e))
+    = after RSingle (foldSnapshot (s,e))
+
+instance Known PDIP where
+  mkPrism _  = prCompoundEvent . pdIP
+  mkFold (Env _ _ (TimeStamp s) (TimeStamp e))
+    = after RSingle (foldIP (s,e))
+
 instance Known PDInstanceVCPU where
   mkPrism _ = prCompoundPollster . pdInstanceVCPU
-  mkFold  _ = after RMapNum (generalizeFold foldInstanceVCPU)
+  mkFold  _ = after RMapNum32 (generalizeFold foldInstanceVCPU)
 
 instance Known PDInstanceRAM where
   mkPrism _ = prCompoundPollster . pdInstanceRAM
-  mkFold  _ = after RMapNum (generalizeFold foldInstanceRAM)
+  mkFold  _ = after RMapNum32 (generalizeFold foldInstanceRAM)
 
 instance Known PDInstanceDisk where
   mkPrism _ = prCompoundPollster . pdInstanceDisk
-  mkFold  _ = after RMapNum (generalizeFold foldInstanceDisk)
+  mkFold  _ = after RMapNum32 (generalizeFold foldInstanceDisk)
 
 instance Known PDInstanceFlavor where
   mkPrism (Env fm _ _ _) = prCompoundPollster . pdInstanceFlavor fm
@@ -107,7 +130,7 @@ foldCPU :: L.Fold PDCPU Word64
 foldCPU = L.Fold sCumulative bCumulative eCumulative
 
 foldVolume :: Window -> PFold (Timed PDVolume) Word64
-foldVolume window = PFold step bEvent (eEvent window)
+foldVolume window = PFold step bEvent (eEvent window standardEventFolder)
   where -- Stop folding as soon as the volume is deleted
         step (More (prev,acc)) (Timed end (PDVolume _ VolumeDelete _ _))
           = Term (Nothing, go end acc prev)
@@ -118,7 +141,7 @@ foldVolume window = PFold step bEvent (eEvent window)
         go _   acc  Nothing = acc
 
 foldSSD :: Window -> PFold (Timed PDSSD) Word64
-foldSSD window = PFold step bEvent (eEvent window)
+foldSSD window = PFold step bEvent (eEvent window standardEventFolder)
   where -- Stop folding as soon as the volume is deleted
         step (More (prev,acc)) (Timed end (PDSSD _ VolumeDelete _ _))
           = Term (Nothing, go end acc prev)
@@ -128,17 +151,53 @@ foldSSD window = PFold step bEvent (eEvent window)
         go end acc (Just x) = M.insertWith (+) (x ^. value) (end - x ^. time) acc
         go _   acc  Nothing = acc
 
+foldImage :: Window -> PFold (Timed PDImage) Word64
+foldImage window = PFold step bEvent (eEvent window standardEventFolder)
+  where -- Stop folding as soon as the image is deleted
+        step (More (prev,acc)) (Timed end (PDImage _ ImageDelete _ _))
+          = Term (Nothing, go end acc prev)
+        step a x = sEvent window a x
+
+        -- Adds the duration up until image delete
+        go end acc (Just x) = M.insertWith (+) (x ^. value) (end - x ^. time) acc
+        go _   acc  Nothing = acc
+
+foldSnapshot :: Window -> PFold (Timed PDSnapshot) Word64
+foldSnapshot window = PFold step bEvent (eEvent window standardEventFolder)
+  where -- Stop folding as soon as the snapshot is deleted
+        step (More (prev,acc)) (Timed end (PDSnapshot _ SnapshotDelete _ _))
+          = Term (Nothing, go end acc prev)
+        step a x = sEvent window a x
+
+        -- Adds the duration up until snapshot delete
+        go end acc (Just x) = M.insertWith (+) (x ^. value) (end - x ^. time) acc
+        go _   acc  Nothing = acc
+
+foldIP :: Window ->  PFold (Timed PDIP) Word64
+foldIP window = PFold step bEvent (eEvent window ipEventFolder)
+  where -- Stop folding as soon as the IP is deleted
+        step (More (prev,acc)) (Timed end (PDIP _ IPDelete _ _))
+          = Term (Nothing, go end acc prev)
+        step a x = sEvent window a x
+
+        -- Adds the duration up until IP delete
+        go end acc (Just x) = M.insertWith (+) (x ^. value) (end - x ^. time) acc
+        go _   acc  Nothing = acc
+
 foldInstanceFlavor :: L.Fold (Timed PDInstanceFlavor) (Map PFValueText Word64)
-foldInstanceFlavor =  L.Fold sPollster bPollster snd
+foldInstanceFlavor =  L.Fold sGaugePollster bGaugePollster snd
 
 foldInstanceVCPU   :: L.Fold (Timed PDInstanceVCPU)   (Map PFValue32 Word64)
-foldInstanceVCPU   =  L.Fold sPollster bPollster snd
+foldInstanceVCPU   =  L.Fold sGaugePollster bGaugePollster snd
 
 foldInstanceRAM    :: L.Fold (Timed PDInstanceRAM)    (Map PFValue32 Word64)
-foldInstanceRAM    =  L.Fold sPollster bPollster snd
+foldInstanceRAM    =  L.Fold sGaugePollster bGaugePollster snd
 
 foldInstanceDisk   :: L.Fold (Timed PDInstanceDisk)   (Map PFValue32 Word64)
-foldInstanceDisk   =  L.Fold sPollster bPollster snd
+foldInstanceDisk   =  L.Fold sGaugePollster bGaugePollster snd
+
+foldImagePollster  :: L.Fold (Timed PDImagePollster)  (Map PFValue64 Word64)
+foldImagePollster  =  L.Fold sGaugePollster bGaugePollster snd
 
 
 -- Utilities -------------------------------------------------------------------
@@ -188,20 +247,19 @@ bCumulative = (Nothing, 0)
 eCumulative (Just (first, latest), acc) = acc + latest - first
 eCumulative (_, acc)                    = acc
 
-
-type APollster x = ( Maybe (Timed x)          -- latest
-                   , Map (PFValue x) Word64 ) -- accumulated map
+type AGaugePollster x = ( Maybe (Timed x)          -- latest
+                        , Map (PFValue x) Word64 ) -- accumulated map
 
 -- | Finds the length of time allocated to each "state" of the resource.
 --   e.g. time a @Volume@ spent at 10GB, then at 20GB (if resized), etc.
-sPollster :: (Valued x, Ord (PFValue x))
-          => APollster x -> Timed x -> APollster x
-sPollster (Nothing,            acc) x =  (Just x, acc)
-sPollster (Just (Timed t1 v1), acc) x@(Timed t2 _)
+sGaugePollster :: (Valued x, Ord (PFValue x))
+          => AGaugePollster x -> Timed x -> AGaugePollster x
+sGaugePollster (Nothing,            acc) x =  (Just x, acc)
+sGaugePollster (Just (Timed t1 v1), acc) x@(Timed t2 _)
   = let delta = t2 - t1
     in  (Just x, M.insertWith (+) (v1 ^. value) (fromIntegral delta) acc)
 
-bPollster = (Nothing, M.empty)
+bGaugePollster = (Nothing, M.empty)
 
 
 type AEvent x = Acc ( Maybe (Timed x)          -- latest
@@ -227,11 +285,14 @@ sEvent (start, end) (More (Just prev, acc)) x
 
 bEvent = More (Nothing, M.empty)
 
-eEvent (start, end) = M.foldlWithKey (\a k v -> a + (fromIntegral k * v)) 0 . go . unwrapAcc
+eEvent (start, end) f = M.foldlWithKey f 0 . go . unwrapAcc
   where -- deal with the dangling last event
         go (Just x, acc)
           | d <- end - s x, d > 0 = insertEvent x d acc
         go a@_                          = snd a
         s x = max start (x ^. time)
+
+standardEventFolder a k v = a + (fromIntegral k * v)
+ipEventFolder       a _ v = a + v
 
 insertEvent x = M.insertWith (+) (x ^. value)

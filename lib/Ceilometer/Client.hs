@@ -82,6 +82,18 @@ decodeFold env@(Env _ sd _ _) raw = do
            | name == valInstanceRAM
              -> return (decodeFold_ (undefined :: proxy PDInstanceRAM) env raw)
 
+           | name == valImage ->
+             if | isEvent sd
+                  -> return (decodeFold_ (undefined :: proxy PDImage) env raw)
+                | otherwise
+                  -> return (decodeFold_ (undefined :: proxy PDImagePollster) env raw)
+
+           | name == valSnapshot
+              -> return (decodeFold_ (undefined :: proxy PDSnapshot) env raw)
+
+           | name == valIP
+              -> return (decodeFold_ (undefined :: proxy PDIP) env raw)
+
            | otherwise -> mzero
   T.sequence x
 
