@@ -255,12 +255,10 @@ ssdTimedPDs = [ Timed testS        ssdPD0
 --          = 390
 -- from borel-core
 --
-volumeTimedPDsResult :: Map Word32 Word64
-volumeTimedPDsResult = M.fromList [ (10, 12)
-                                  , (30, 9)
-                                  ]
+volumeTimedPDsResult :: Word64
+volumeTimedPDsResult = 390
 
-ssdTimedPDsResult :: Map Word32 Word64
+ssdTimedPDsResult :: Word64
 ssdTimedPDsResult = volumeTimedPDsResult
 
 -- IMAGE ----------------------------------------------------------------------
@@ -301,10 +299,8 @@ imageTimedPDs = [ Timed testS        imagePD0
 --          + 16 * 400000
 --          = 9600000
 --
-imageTimedPDsResult :: Map Word32 Word64
-imageTimedPDsResult = M.fromList [ (200000, 16)
-                                 , (400000, 16)
-                                 ]
+imageTimedPDsResult :: Word64
+imageTimedPDsResult = 9600000
 
 imagePPD0, imagePPD1, imagePPD2 :: PDImagePollster
 imagePPD0 = PDImagePollster 200000
@@ -362,10 +358,8 @@ snapshotTimedPDs = [ Timed testS        snapshotPD0
 --          + 16 * 300
 --          = 8000
 --
-snapshotTimedPDsResult :: Map Word32 Word64
-snapshotTimedPDsResult = M.fromList [ (200, 16)
-                                    , (300, 16)
-                                    ]
+snapshotTimedPDsResult :: Word64
+snapshotTimedPDsResult = 8000
 
 -- IP ----------------------------------------------------------------------
 

@@ -150,13 +150,6 @@ instance Valued PDSnapshot       where
   type PFValue PDSnapshot        = PFValue32
   value f (PDSnapshot a b c x)   = PDSnapshot a b c <$> f x
 
-instance Valued PDIP       where
-  type PFValue PDIP        = PFIPAlloc
-  value f (PDIP a b c x)   = PDIP a b c <$> f x
-
--- | Information needed to parse/fold Ceilometer types, supplied by users.
---
-data    Env       = Env { _flavormap  :: FlavorMap
-                        , _sourcedict :: SourceDict
-                        , _start      :: TimeStamp
-                        , _end        :: TimeStamp }
+instance Valued PDIP             where
+  type PFValue PDIP              = PFIPAlloc
+  value f (PDIP a b c x)         = PDIP a b c <$> f x

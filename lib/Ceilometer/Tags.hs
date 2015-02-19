@@ -51,8 +51,8 @@ isEvent          = maybe True (== valTrue) . lookupEvent
 
 sourceIsBlock, sourceIsFast :: SourceDict -> Bool
 sourceIsBlock sd
-  | Just v <- lookupVolumeType sd, v == valVolumeBlockId = True
-  | otherwise                                            = False
+  | Just v <- lookupVolumeType sd, v == valVolumeBlock = True
+  | otherwise                                          = False
 sourceIsFast sd
-  | Just v <- lookupVolumeType sd, v == valVolumeFastId  = True
-  | otherwise                                            = False
+  | Just v <- lookupVolumeType sd, v == valVolumeFast  = True
+  | otherwise                                          = False
