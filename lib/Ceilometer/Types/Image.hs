@@ -9,7 +9,6 @@
 -- /Description/
 -- This module defines the Ceilometer Image type.
 --
-{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE MultiWayIf         #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE TemplateHaskell    #-}
@@ -27,7 +26,6 @@ import           Control.Applicative
 import           Control.Lens
 import           Data.Binary           (Word8)
 import           Data.Text             (Text)
-import           Data.Typeable
 
 import           Ceilometer.Types.Base
 import           Ceilometer.Types.TH
@@ -57,7 +55,7 @@ data PDImage = PDImage
   , _imageVerb     :: PFImageVerb
   , _imageEndpoint :: PFEndpoint
   , _imageVal      :: PFValue32 }
-  deriving (Eq, Show, Read, Typeable)
+  deriving (Eq, Show, Read)
 
 $(makeLenses ''PDImage)
 
@@ -77,7 +75,7 @@ pdImage = prism' pretty parse
             (status ^. re pfImageStatus)
 
 newtype PDImagePollster = PDImagePollster { _pdImagePollsterVal :: PFValue64 }
-     deriving (Show, Read, Eq, Typeable)
+     deriving (Show, Read, Eq)
 
 pdImagePollster :: Iso' PRSimple PDImagePollster
 pdImagePollster = iso (PDImagePollster . _prSimpleVal) (PRSimple . _pdImagePollsterVal)

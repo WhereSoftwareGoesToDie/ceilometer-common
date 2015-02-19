@@ -9,7 +9,6 @@
 -- /Description/
 -- This module defines the Ceilometer IP type.
 --
-{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE MultiWayIf         #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE TemplateHaskell    #-}
@@ -27,7 +26,6 @@ import           Control.Applicative
 import           Control.Lens
 import           Data.Binary           (Word32, Word8)
 import           Data.Text             (Text)
-import           Data.Typeable
 
 import           Ceilometer.Types.Base
 import           Ceilometer.Types.TH
@@ -60,7 +58,7 @@ data PDIP = PDIP
   , _ipEndpoint :: PFEndpoint
   , _ipVal      :: PFIPAlloc
   }
-  deriving (Eq, Show, Read, Typeable)
+  deriving (Eq, Show, Read)
 
 $(makeLenses ''PDIP)
 

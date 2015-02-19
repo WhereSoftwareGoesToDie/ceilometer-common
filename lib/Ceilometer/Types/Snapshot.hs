@@ -9,7 +9,6 @@
 -- /Description/
 -- This module defines the Ceilometer Snapshot type.
 --
-{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE MultiWayIf         #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE TemplateHaskell    #-}
@@ -26,7 +25,6 @@ import           Control.Applicative
 import           Control.Lens
 import           Data.Binary           (Word8)
 import           Data.Text             (Text)
-import           Data.Typeable
 
 import           Ceilometer.Types.Base
 import           Ceilometer.Types.TH
@@ -52,7 +50,7 @@ data PDSnapshot = PDSnapshot
   , _snapshotVerb     :: PFSnapshotVerb
   , _snapshotEndpoint :: PFEndpoint
   , _snapshotVal      :: PFValue32 }
-  deriving (Eq, Show, Read, Typeable)
+  deriving (Eq, Show, Read)
 
 $(makeLenses ''PDSnapshot)
 
