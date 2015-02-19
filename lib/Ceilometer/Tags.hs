@@ -47,4 +47,4 @@ lookupMetricName = lookupSource keyMetricName
 lookupEvent      = lookupSource keyEvent
 lookupVolumeType = lookupSource keyVolumeType
 lookupCompound   = lookupSource keyCompound
-isEvent          = maybe True (== valTrue) . lookupEvent
+isEvent          = maybe False (== valTrue) . lookupEvent
