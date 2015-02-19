@@ -48,11 +48,3 @@ lookupEvent      = lookupSource keyEvent
 lookupVolumeType = lookupSource keyVolumeType
 lookupCompound   = lookupSource keyCompound
 isEvent          = maybe True (== valTrue) . lookupEvent
-
-sourceIsBlock, sourceIsFast :: SourceDict -> Bool
-sourceIsBlock sd
-  | Just v <- lookupVolumeType sd, v == valVolumeBlock = True
-  | otherwise                                          = False
-sourceIsFast sd
-  | Just v <- lookupVolumeType sd, v == valVolumeFast  = True
-  | otherwise                                          = False
