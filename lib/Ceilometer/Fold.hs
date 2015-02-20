@@ -185,19 +185,19 @@ foldIP window = PFold step bEvent (eEvent window ipEventFolder)
         go _   acc  Nothing = acc
 
 foldInstanceFlavor :: L.Fold (Timed PDInstanceFlavor) (Map PFValueText Word64)
-foldInstanceFlavor =  L.Fold sGaugePollster bGaugePollster snd
+foldInstanceFlavor =  L.Fold (sGaugePollster isInstanceFlavorBillable) bGaugePollster snd
 
 foldInstanceVCPU   :: L.Fold (Timed PDInstanceVCPU)   (Map PFValue32 Word64)
-foldInstanceVCPU   =  L.Fold sGaugePollster bGaugePollster snd
+foldInstanceVCPU   =  L.Fold (sGaugePollster isInstanceVCPUBillable) bGaugePollster snd
 
 foldInstanceRAM    :: L.Fold (Timed PDInstanceRAM)    (Map PFValue32 Word64)
-foldInstanceRAM    =  L.Fold sGaugePollster bGaugePollster snd
+foldInstanceRAM    =  L.Fold (sGaugePollster isInstanceRAMBillable) bGaugePollster snd
 
 foldInstanceDisk   :: L.Fold (Timed PDInstanceDisk)   (Map PFValue32 Word64)
-foldInstanceDisk   =  L.Fold sGaugePollster bGaugePollster snd
+foldInstanceDisk   =  L.Fold (sGaugePollster isInstanceDiskBillable) bGaugePollster snd
 
 foldImagePollster  :: L.Fold (Timed PDImagePollster)  (Map PFValue64 Word64)
-foldImagePollster  =  L.Fold sGaugePollster bGaugePollster snd
+foldImagePollster  =  L.Fold (sGaugePollster $ const True) bGaugePollster snd
 
 
 -- Utilities -------------------------------------------------------------------
@@ -253,14 +253,16 @@ type AGaugePollster x = ( Maybe (Timed x)          -- latest
 -- | Finds the length of time allocated to each "state" of the resource.
 --   e.g. time a @Volume@ spent at 10GB, then at 20GB (if resized), etc.
 sGaugePollster :: (Valued x, Ord (PFValue x))
-          => AGaugePollster x -> Timed x -> AGaugePollster x
-sGaugePollster (Nothing,            acc) x =  (Just x, acc)
-sGaugePollster (Just (Timed t1 v1), acc) x@(Timed t2 _)
-  = let delta = t2 - t1
-    in  (Just x, M.insertWith (+) (v1 ^. value) (fromIntegral delta) acc)
+          => (x -> Bool) -> AGaugePollster x -> Timed x -> AGaugePollster x
+sGaugePollster _          (Nothing,            acc) x =  (Just x, acc)
+sGaugePollster isBillable (Just (Timed t1 v1), acc) x@(Timed t2 _)
+  = let delta = t2 - t1 in
+    if isBillable v1 then
+      (Just x, M.insertWith (+) (v1 ^. value) (fromIntegral delta) acc)
+    else
+      (Just x, acc)
 
 bGaugePollster = (Nothing, M.empty)
-
 
 type AEvent x = Acc ( Maybe (Timed x)          -- latest
                     , Map (PFValue x) Word64 ) -- accumulated map
