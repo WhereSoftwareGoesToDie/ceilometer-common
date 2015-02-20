@@ -18,7 +18,9 @@ module Ceilometer.Types.Instance
   , PDInstanceRAM(..), pdInstanceRAM
   , PDInstanceDisk(..), pdInstanceDisk
   , PDInstanceFlavor(..), pdInstanceFlavor
-  , siphashID
+  , siphashID, isInstanceStatusBillable
+  , isInstanceFlavorBillable, isInstanceVCPUBillable
+  , isInstanceRAMBillable, isInstanceDiskBillable
   ) where
 
 import           Control.Applicative
@@ -59,6 +61,36 @@ $(declarePF    "Instance"
             [''Show, ''Read, ''Eq, ''Enum, ''Bounded] )
 
 -- BOILERPLATE GALORE
+
+isInstanceFlavorBillable :: PDInstanceFlavor -> Bool
+isInstanceVCPUBillable   :: PDInstanceVCPU   -> Bool
+isInstanceRAMBillable    :: PDInstanceRAM    -> Bool
+isInstanceDiskBillable   :: PDInstanceDisk   -> Bool
+isInstanceFlavorBillable (PDInstanceFlavor status _) = isInstanceStatusBillable status
+isInstanceVCPUBillable   (PDInstanceVCPU   status _) = isInstanceStatusBillable status
+isInstanceRAMBillable    (PDInstanceRAM    status _) = isInstanceStatusBillable status
+isInstanceDiskBillable   (PDInstanceDisk   status _) = isInstanceStatusBillable status
+
+isInstanceStatusBillable :: PFInstanceStatus -> Bool
+isInstanceStatusBillable InstanceError            = False
+isInstanceStatusBillable InstanceActive           = True
+isInstanceStatusBillable InstanceShutoff          = False
+isInstanceStatusBillable InstanceBuild            = False
+isInstanceStatusBillable InstanceRebuild          = False
+isInstanceStatusBillable InstanceDeleted          = False
+isInstanceStatusBillable InstanceSoftDeleted      = False
+isInstanceStatusBillable InstanceShelved          = False
+isInstanceStatusBillable InstanceShelvedOffloaded = False
+isInstanceStatusBillable InstanceReboot           = True
+isInstanceStatusBillable InstanceHardReboot       = True
+isInstanceStatusBillable InstancePassword         = True
+isInstanceStatusBillable InstanceResize           = True
+isInstanceStatusBillable InstanceVerifyResize     = True
+isInstanceStatusBillable InstanceRevertResize     = True
+isInstanceStatusBillable InstancePaused           = False
+isInstanceStatusBillable InstanceSuspended        = False
+isInstanceStatusBillable InstanceRescue           = False
+isInstanceStatusBillable InstanceMigrating        = False
 
 data PDInstanceVCPU = PDInstanceVCPU PFInstanceStatus PFValue32
      deriving (Eq, Show, Read)

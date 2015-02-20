@@ -59,6 +59,11 @@ module Ceilometer.Types
     -- * Interface
   , Env(..)
   , Flavor, FlavorMap
+
+    -- * Extra
+  , isInstanceStatusBillable
+  , isInstanceFlavorBillable, isInstanceVCPUBillable
+  , isInstanceRAMBillable, isInstanceDiskBillable
   ) where
 
 import           Control.Applicative
