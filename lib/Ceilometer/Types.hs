@@ -43,6 +43,10 @@ module Ceilometer.Types
   , PDVolume(PDVolume), pdVolume
   , PDSSD(PDSSD), pdSSD
   , PDCPU(PDCPU), pdCPU
+  , PDDiskRead(..), pdDiskRead
+  , PDDiskWrite(..), pdDiskWrite
+  , PDNeutronTx(..), pdNeutronTx
+  , PDNeutronRx(..), pdNeutronRx
   , PDInstanceVCPU(PDInstanceVCPU), pdInstanceVCPU
   , PDInstanceRAM(PDInstanceRAM), pdInstanceRAM
   , PDInstanceDisk(PDInstanceDisk), pdInstanceDisk
@@ -68,9 +72,11 @@ import           Data.Foldable
 
 import           Ceilometer.Types.Base
 import           Ceilometer.Types.CPU
+import           Ceilometer.Types.Disk
 import           Ceilometer.Types.Image
 import           Ceilometer.Types.Instance
 import           Ceilometer.Types.IP
+import           Ceilometer.Types.Neutron
 import           Ceilometer.Types.Snapshot
 import           Ceilometer.Types.Volume
 import           Control.PFold
@@ -113,6 +119,22 @@ instance Valued a => Valued (Timed a) where
 instance Valued PDCPU            where
   type PFValue PDCPU             = PFValue64
   value f (PDCPU x)              = PDCPU <$> f x
+
+instance Valued PDDiskRead       where
+  type PFValue PDDiskRead        = PFValue64
+  value f (PDDiskRead x)         = PDDiskRead <$> f x
+
+instance Valued PDDiskWrite      where
+  type PFValue PDDiskWrite       = PFValue64
+  value f (PDDiskWrite x)        = PDDiskWrite <$> f x
+
+instance Valued PDNeutronTx      where
+  type PFValue PDNeutronTx       = PFValue64
+  value f (PDNeutronTx x)        = PDNeutronTx <$> f x
+
+instance Valued PDNeutronRx      where
+  type PFValue PDNeutronRx       = PFValue64
+  value f (PDNeutronRx x)        = PDNeutronRx <$> f x
 
 instance Valued PDVolume         where
   type PFValue PDVolume          = PFValue32

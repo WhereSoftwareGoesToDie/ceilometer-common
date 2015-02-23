@@ -26,6 +26,10 @@ module Ceilometer.Fold
 
     -- * Low-level folds
   , foldCPU
+  , foldDiskRead
+  , foldDiskWrite
+  , foldNeutronRx
+  , foldNeutronTx
   , foldVolume
   , foldSSD
   , foldImage
@@ -78,6 +82,22 @@ instance Known PDCPU where
   mkPrism _ = prSimple . pdCPU
   mkFold  _ = after RSingle (generalizeFold (timewrapFold foldCPU))
 
+instance Known PDDiskRead where
+  mkPrism _ = prSimple . pdDiskRead
+  mkFold  _ = after RSingle (generalizeFold (timewrapFold foldDiskRead))
+
+instance Known PDDiskWrite where
+  mkPrism _ = prSimple . pdDiskWrite
+  mkFold  _ = after RSingle (generalizeFold (timewrapFold foldDiskWrite))
+
+instance Known PDNeutronTx where
+  mkPrism _ = prSimple . pdNeutronTx
+  mkFold  _ = after RSingle (generalizeFold (timewrapFold foldNeutronTx))
+
+instance Known PDNeutronRx where
+  mkPrism _ = prSimple . pdNeutronRx
+  mkFold  _ = after RSingle (generalizeFold (timewrapFold foldNeutronRx))
+
 instance Known PDImagePollster where
   mkPrism _ = prSimple . pdImagePollster
   mkFold  _ = after RMapNum64 (generalizeFold foldImagePollster)
@@ -128,6 +148,18 @@ instance Known PDInstanceFlavor where
 
 foldCPU :: L.Fold PDCPU Word64
 foldCPU = L.Fold sCumulative bCumulative eCumulative
+
+foldDiskRead :: L.Fold PDDiskRead Word64
+foldDiskRead = L.Fold sCumulative bCumulative eCumulative
+
+foldDiskWrite :: L.Fold PDDiskWrite Word64
+foldDiskWrite = L.Fold sCumulative bCumulative eCumulative
+
+foldNeutronTx :: L.Fold PDNeutronTx Word64
+foldNeutronTx = L.Fold sCumulative bCumulative eCumulative
+
+foldNeutronRx :: L.Fold PDNeutronRx Word64
+foldNeutronRx = L.Fold sCumulative bCumulative eCumulative
 
 foldVolume :: Window -> PFold (Timed PDVolume) Word64
 foldVolume window = PFold step bEvent (eEvent window standardEventFolder)
