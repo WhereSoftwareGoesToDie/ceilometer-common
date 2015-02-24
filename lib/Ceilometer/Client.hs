@@ -54,6 +54,18 @@ decodeFold env@(Env _ sd _ _) raw = do
         if | name == valCPU
              -> return (decodeFold_ (undefined :: proxy PDCPU) env raw)
 
+           | name == valDiskReads
+             -> return (decodeFold_ (undefined :: proxy PDDiskRead) env raw)
+
+           | name == valDiskWrites
+             -> return (decodeFold_ (undefined :: proxy PDDiskWrite) env raw)
+
+           | name == valNeutronIn
+             -> return (decodeFold_ (undefined :: proxy PDNeutronRx) env raw)
+
+           | name == valNeutronOut
+             -> return (decodeFold_ (undefined :: proxy PDNeutronTx) env raw)
+
            | name == valVolume -> do
              voltype <- lookupVolumeType sd
 

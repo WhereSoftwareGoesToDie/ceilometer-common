@@ -9,9 +9,9 @@
 -- /Description/
 -- This module defines the Ceilometer Image type.
 --
-{-# LANGUAGE MultiWayIf         #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE TemplateHaskell    #-}
+{-# LANGUAGE MultiWayIf        #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 module Ceilometer.Types.Image
   ( -- * Fields
