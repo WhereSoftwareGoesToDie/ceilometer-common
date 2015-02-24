@@ -25,10 +25,12 @@ library
   other-modules:       Ceilometer.Types.TH
                        Ceilometer.Types.Base
                        Ceilometer.Types.CPU
+                       Ceilometer.Types.Disk
                        Ceilometer.Types.Volume
                        Ceilometer.Types.Image
                        Ceilometer.Types.Instance
                        Ceilometer.Types.IP
+                       Ceilometer.Types.Neutron
                        Ceilometer.Types.Snapshot
                        Control.PFold
 
