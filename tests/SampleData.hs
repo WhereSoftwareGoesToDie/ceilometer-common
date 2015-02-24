@@ -195,14 +195,34 @@ flavorTimedPDsResult = [ (flavorID1, 9)
 
 -- CPU -------------------------------------------------------------------------
 
-cpuIncreasing = map PDCPU [30, 40, 50, 60]
-cpuDecreasing = map PDCPU [40, 30, 20, 10]
-cpuAny        = map PDCPU [20, 30, 10, 20, 30, 40, 10]
+cumulativeIncreasing = [30, 40, 50, 60]
+cumulativeDecreasing = [40, 30, 20, 10]
+cumulativeAny        = [20, 30, 10, 20, 30, 40, 10]
 
-cpuDecreasingResult, cpuIncreasingResult, cpuAnyResult :: Word64
-cpuDecreasingResult = 60
-cpuIncreasingResult = 30
-cpuAnyResult        = 60
+cpuIncreasing        = map PDCPU cumulativeIncreasing
+cpuDecreasing        = map PDCPU cumulativeDecreasing
+cpuAny               = map PDCPU cumulativeAny
+
+neutronRxIncreasing  = map PDNeutronRx cumulativeIncreasing
+neutronRxDecreasing  = map PDNeutronRx cumulativeDecreasing
+neutronRxAny         = map PDNeutronRx cumulativeAny
+
+neutronTxIncreasing  = map PDNeutronTx cumulativeIncreasing
+neutronTxDecreasing  = map PDNeutronTx cumulativeDecreasing
+neutronTxAny         = map PDNeutronTx cumulativeAny
+
+diskReadIncreasing   = map PDDiskRead cumulativeIncreasing
+diskReadDecreasing   = map PDDiskRead cumulativeDecreasing
+diskReadAny          = map PDDiskRead cumulativeAny
+
+diskWriteIncreasing  = map PDDiskWrite cumulativeIncreasing
+diskWriteDecreasing  = map PDDiskWrite cumulativeDecreasing
+diskWriteAny         = map PDDiskWrite cumulativeAny
+
+cumulativeDecreasingResult, cumulativeIncreasingResult, cumulativeAnyResult :: Word64
+cumulativeDecreasingResult = 60
+cumulativeIncreasingResult = 30
+cumulativeAnyResult        = 60
 
 
 -- VOLUME ----------------------------------------------------------------------

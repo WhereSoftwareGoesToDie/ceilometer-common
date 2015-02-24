@@ -17,13 +17,53 @@ suite = do
   -- "Cumulative Pollster" resources
   describe "Folding points for CUMULATIVE resource: CPU" $ do
     it "ok for monotonically decreasing points"
-      $ L.fold foldCPU cpuDecreasing `shouldBe` cpuDecreasingResult
+      $ L.fold foldCPU cpuDecreasing `shouldBe` cumulativeDecreasingResult
 
     it "ok for monotonically increasing points"
-      $ L.fold foldCPU cpuIncreasing `shouldBe` cpuIncreasingResult
+      $ L.fold foldCPU cpuIncreasing `shouldBe` cumulativeIncreasingResult
 
     it "ok for non-monotonic points"
-      $ L.fold foldCPU cpuAny `shouldBe` cpuAnyResult
+      $ L.fold foldCPU cpuAny `shouldBe` cumulativeAnyResult
+
+  describe "Folding points for CUMULATIVE resource: NeutronRx" $ do
+    it "ok for monotonically decreasing points"
+      $ L.fold foldNeutronRx neutronRxDecreasing `shouldBe` cumulativeDecreasingResult
+
+    it "ok for monotonically increasing points"
+      $ L.fold foldNeutronRx neutronRxIncreasing `shouldBe` cumulativeIncreasingResult
+
+    it "ok for non-monotonic points"
+      $ L.fold foldNeutronRx neutronRxAny `shouldBe` cumulativeAnyResult
+
+  describe "Folding points for CUMULATIVE resource: NeutronTx" $ do
+    it "ok for monotonically decreasing points"
+      $ L.fold foldNeutronTx neutronTxDecreasing `shouldBe` cumulativeDecreasingResult
+
+    it "ok for monotonically increasing points"
+      $ L.fold foldNeutronTx neutronTxIncreasing `shouldBe` cumulativeIncreasingResult
+
+    it "ok for non-monotonic points"
+      $ L.fold foldNeutronTx neutronTxAny `shouldBe` cumulativeAnyResult
+
+  describe "Folding points for CUMULATIVE resource: DiskWrite" $ do
+    it "ok for monotonically decreasing points"
+      $ L.fold foldDiskWrite diskWriteDecreasing `shouldBe` cumulativeDecreasingResult
+
+    it "ok for monotonically increasing points"
+      $ L.fold foldDiskWrite diskWriteIncreasing `shouldBe` cumulativeIncreasingResult
+
+    it "ok for non-monotonic points"
+      $ L.fold foldDiskWrite diskWriteAny `shouldBe` cumulativeAnyResult
+
+  describe "Folding points for CUMULATIVE resource: DiskRead" $ do
+    it "ok for monotonically decreasing points"
+      $ L.fold foldDiskRead diskReadDecreasing `shouldBe` cumulativeDecreasingResult
+
+    it "ok for monotonically increasing points"
+      $ L.fold foldDiskRead diskReadIncreasing `shouldBe` cumulativeIncreasingResult
+
+    it "ok for non-monotonic points"
+      $ L.fold foldDiskRead diskReadAny `shouldBe` cumulativeAnyResult
 
   -- "Gauge Event" resources
   describe "Folding points for EVENT resource: VOLUME" $
