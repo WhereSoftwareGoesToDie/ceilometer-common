@@ -32,20 +32,18 @@ module Ceilometer.Client
 import           Control.Applicative
 import           Control.Lens
 import           Control.Monad
-import           Data.Maybe
 import qualified Data.Traversable    as T
-import           Data.Word
 import           Pipes
-import qualified Pipes.Prelude       as P
 
 import           Ceilometer.Fold     as C
 import           Ceilometer.Tags
 import           Ceilometer.Types    as C
 import           Vaultaire.Types
 
+
 decodeFold
   :: (Monad m, Applicative m)
-  => Env                        -- ^ @SourceDict@ to verify the above claim.
+  => Env                        -- ^ @SourceDict@ to infer the resource type.
   -> Producer SimplePoint m ()  -- ^ The raw data points to parse and aggregate.
   -> m (Maybe FoldResult)       -- ^ Result
 

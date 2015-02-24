@@ -59,6 +59,7 @@ module Ceilometer.Types
     -- * Interface
   , Env(..)
   , Flavor, FlavorMap
+  , siphashID
   ) where
 
 import           Control.Applicative
