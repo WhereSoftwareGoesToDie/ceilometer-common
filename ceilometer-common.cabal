@@ -67,10 +67,10 @@ test-suite unit
                      , hspec >= 2.1
                      , lens >= 4.7
                      , lens-properties >= 4.7
-                     , mtl >= 2.2
+                     , mtl >= 2.1
                      , pipes >= 4.1
                      , siphash >= 1.0
                      , template-haskell >= 2.9
                      , text >= 1.2
-                     , transformers >= 0.4
+                     , transformers >= 0.3
                      , vaultaire-common >= 2.8.3
