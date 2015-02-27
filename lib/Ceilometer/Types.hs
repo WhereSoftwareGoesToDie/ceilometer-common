@@ -61,9 +61,10 @@ module Ceilometer.Types
   , Timed(Timed), time
 
     -- * Interface
-  , Env(..)
+  , Env(..), Filters(..)
   , Flavor, FlavorMap
   , siphashID
+  , filterByInstanceStatus
   ) where
 
 import           Control.Applicative
@@ -90,9 +91,16 @@ import           Vaultaire.Types
 --
 data Env = Env { _flavormap  :: FlavorMap
                , _sourcedict :: SourceDict
+               , _filters    :: Filters
                , _start      :: TimeStamp
                , _end        :: TimeStamp }
 
+data Filters = Filters {
+    instanceStatusFilter :: PFInstanceStatus -> Bool
+}
+
+filterByInstanceStatus :: Filters -> (a -> PFInstanceStatus) -> a -> Bool
+filterByInstanceStatus (Filters f) g = f . g
 
 --------------------------------------------------------------------------------
 
