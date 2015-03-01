@@ -24,4 +24,4 @@ script:
   - run-cabal-test --show-details=always
 
 after_script:
-  - hpc-coveralls --exclude-dir=tests --exclude-dir=lib/Ceilometer/Types/TH.hs --print-response --coverage-mode=AllowPartialLines unit
+  - hpc-coveralls --exclude-dir=tests --exclude-dir=lib/Ceilometer/Types/TH.hs --coverage-mode=AllowPartialLines unit
