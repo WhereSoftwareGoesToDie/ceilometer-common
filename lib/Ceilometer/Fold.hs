@@ -104,44 +104,56 @@ instance Known PDImagePollster where
 
 instance Known PDVolume where
   mkPrism _ = prCompoundEvent . pdVolume
-  mkFold (Env _ _ (TimeStamp s) (TimeStamp e))
+  mkFold (Env _ _ _ (TimeStamp s) (TimeStamp e))
     = after RSingle (foldVolume (s,e))
 
 instance Known PDSSD where
   mkPrism _  = prCompoundEvent . pdSSD
-  mkFold (Env _ _ (TimeStamp s) (TimeStamp e))
+  mkFold (Env _ _ _ (TimeStamp s) (TimeStamp e))
     = after RSingle (foldSSD (s,e))
 
 instance Known PDImage where
   mkPrism _  = prCompoundEvent . pdImage
-  mkFold (Env _ _ (TimeStamp s) (TimeStamp e))
+  mkFold (Env _ _ _ (TimeStamp s) (TimeStamp e))
     = after RSingle (foldImage (s,e))
 
 instance Known PDSnapshot where
   mkPrism _  = prCompoundEvent . pdSnapshot
-  mkFold (Env _ _ (TimeStamp s) (TimeStamp e))
+  mkFold (Env _ _ _ (TimeStamp s) (TimeStamp e))
     = after RSingle (foldSnapshot (s,e))
 
 instance Known PDIP where
   mkPrism _  = prCompoundEvent . pdIP
-  mkFold (Env _ _ (TimeStamp s) (TimeStamp e))
+  mkFold (Env _ _ _ (TimeStamp s) (TimeStamp e))
     = after RSingle (foldIP (s,e))
 
 instance Known PDInstanceVCPU where
-  mkPrism _ = prCompoundPollster . pdInstanceVCPU
-  mkFold  _ = after RMapNum32 (generalizeFold foldInstanceVCPU)
+  mkPrism _                = prCompoundPollster . pdInstanceVCPU
+  mkFold  (Env _ _  f _ _) = after RMapNum32
+                                   ( generalizeFold   $
+                                     foldInstanceVCPU $
+                                     filterByInstanceStatus f (\(PDInstanceVCPU s _) -> s))
 
 instance Known PDInstanceRAM where
-  mkPrism _ = prCompoundPollster . pdInstanceRAM
-  mkFold  _ = after RMapNum32 (generalizeFold foldInstanceRAM)
+  mkPrism _                = prCompoundPollster . pdInstanceRAM
+  mkFold  (Env _ _  f _ _) = after RMapNum32
+                                   ( generalizeFold  $
+                                     foldInstanceRAM $
+                                     filterByInstanceStatus f (\(PDInstanceRAM s _) -> s))
 
 instance Known PDInstanceDisk where
   mkPrism _ = prCompoundPollster . pdInstanceDisk
-  mkFold  _ = after RMapNum32 (generalizeFold foldInstanceDisk)
+  mkFold  (Env _ _  f _ _) = after RMapNum32
+                                   ( generalizeFold   $
+                                     foldInstanceDisk $
+                                     filterByInstanceStatus f (\(PDInstanceDisk s _) -> s))
 
 instance Known PDInstanceFlavor where
-  mkPrism (Env fm _ _ _) = prCompoundPollster . pdInstanceFlavor fm
-  mkFold _               = after RMapText (generalizeFold foldInstanceFlavor)
+  mkPrism (Env fm _ _ _ _) = prCompoundPollster . pdInstanceFlavor fm
+  mkFold  (Env _ _  f _ _) = after RMapText
+                                   ( generalizeFold   $
+                                     foldInstanceFlavor $
+                                     filterByInstanceStatus f (\(PDInstanceFlavor s _) -> s))
 
 
 -- Fold ------------------------------------------------------------------------
@@ -216,21 +228,24 @@ foldIP window = PFold step bEvent (eEvent window ipEventFolder)
         go end acc (Just x) = M.insertWith (+) (x ^. value) (end - x ^. time) acc
         go _   acc  Nothing = acc
 
-foldInstanceFlavor :: L.Fold (Timed PDInstanceFlavor) (Map PFValueText Word64)
-foldInstanceFlavor =  L.Fold sGaugePollster bGaugePollster snd
+foldInstanceFlavor   :: (PDInstanceFlavor -> Bool)
+                     -> L.Fold (Timed PDInstanceFlavor) (Map PFValueText Word64)
+foldInstanceFlavor f =  L.Fold (sGaugePollster f) bGaugePollster snd
 
-foldInstanceVCPU   :: L.Fold (Timed PDInstanceVCPU)   (Map PFValue32 Word64)
-foldInstanceVCPU   =  L.Fold sGaugePollster bGaugePollster snd
+foldInstanceVCPU     :: (PDInstanceVCPU -> Bool)
+                     -> L.Fold (Timed PDInstanceVCPU) (Map PFValue32 Word64)
+foldInstanceVCPU   f =  L.Fold (sGaugePollster f) bGaugePollster snd
 
-foldInstanceRAM    :: L.Fold (Timed PDInstanceRAM)    (Map PFValue32 Word64)
-foldInstanceRAM    =  L.Fold sGaugePollster bGaugePollster snd
+foldInstanceRAM      :: (PDInstanceRAM -> Bool)
+                     -> L.Fold (Timed PDInstanceRAM)    (Map PFValue32 Word64)
+foldInstanceRAM    f =  L.Fold (sGaugePollster f) bGaugePollster snd
 
-foldInstanceDisk   :: L.Fold (Timed PDInstanceDisk)   (Map PFValue32 Word64)
-foldInstanceDisk   =  L.Fold sGaugePollster bGaugePollster snd
+foldInstanceDisk     :: (PDInstanceDisk -> Bool)
+                     -> L.Fold (Timed PDInstanceDisk)   (Map PFValue32 Word64)
+foldInstanceDisk   f =  L.Fold (sGaugePollster f) bGaugePollster snd
 
 foldImagePollster  :: L.Fold (Timed PDImagePollster)  (Map PFValue64 Word64)
-foldImagePollster  =  L.Fold sGaugePollster bGaugePollster snd
-
+foldImagePollster  =  L.Fold (sGaugePollster $ const True) bGaugePollster snd
 
 -- Utilities -------------------------------------------------------------------
 
@@ -285,11 +300,15 @@ type AGaugePollster x = ( Maybe (Timed x)          -- latest
 -- | Finds the length of time allocated to each "state" of the resource.
 --   e.g. time a @Volume@ spent at 10GB, then at 20GB (if resized), etc.
 sGaugePollster :: (Valued x, Ord (PFValue x))
-          => AGaugePollster x -> Timed x -> AGaugePollster x
-sGaugePollster (Nothing,            acc) x =  (Just x, acc)
-sGaugePollster (Just (Timed t1 v1), acc) x@(Timed t2 _)
+          => (x -> Bool) -> AGaugePollster x -> Timed x -> AGaugePollster x
+sGaugePollster _          (Nothing,            acc) x =  (Just x, acc)
+sGaugePollster isBillable (Just (Timed t1 v1), acc) x@(Timed t2 _)
   = let delta = t2 - t1
-    in  (Just x, M.insertWith (+) (v1 ^. value) (fromIntegral delta) acc)
+        acc'  = if isBillable v1 then
+                    M.insertWith (+) (v1 ^. value) (fromIntegral delta) acc
+                else
+                    acc
+    in (Just x, acc')
 
 bGaugePollster = (Nothing, M.empty)
 

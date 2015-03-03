@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 module Prisms where
 
-import           Control.Lens          hiding (elements)
+import           Control.Lens            hiding (elements)
 import           Control.Lens.Properties
 import           Test.Hspec
 import           Test.Hspec.QuickCheck

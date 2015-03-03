@@ -1,5 +1,5 @@
 name:                ceilometer-common
-version:             0.1.0
+version:             0.2.0
 synopsis:            Common Haskell types and encoding for ceilometer
 description:         Provides a set of common types for use with ceilometer related packages.
 homepage:            https://github.com/anchor/ceilometer-common
@@ -74,3 +74,4 @@ test-suite unit
                      , text >= 1.2
                      , transformers >= 0.3
                      , vaultaire-common >= 2.8.3
+                     , data-ordlist >= 0.4.7

@@ -47,7 +47,7 @@ decodeFold
   -> Producer SimplePoint m ()  -- ^ The raw data points to parse and aggregate.
   -> m (Maybe FoldResult)       -- ^ Result
 
-decodeFold env@(Env _ sd _ _) raw = do
+decodeFold env@(Env _ sd _ _ _) raw = do
   let x = do
         name <- lookupMetricName sd
 

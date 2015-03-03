@@ -85,7 +85,10 @@ suite = do
   -- "Gauge Pollster" resources
   describe "Folding points for POLLSTER resource: INSTANCE FLAVOR" $
     it "ok for example payload"
-      $ L.fold foldInstanceFlavor flavorTimedPDs `shouldBe` M.fromList flavorTimedPDsResult
+      $ L.fold (foldInstanceFlavor $ const True) flavorTimedPDs `shouldBe` M.fromList flavorTimedPDsResult
+
+  describe "Filtering instance statuses" $
+      prop "is sane" propSafetyInstance
 
   describe "Folding points for POLLSTER resource: IMAGE POLLSTER" $
     it "ok for example payload"
