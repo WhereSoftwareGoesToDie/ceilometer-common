@@ -74,3 +74,4 @@ test-suite unit
                      , text >= 1.2
                      , transformers >= 0.3
                      , vaultaire-common >= 2.8.3
+                     , data-ordlist >= 0.4.7

@@ -1,6 +1,8 @@
 -- This module defines hard-coded sample data
 -- for parsing/printing and folding.
 --
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE OverlappingInstances #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
@@ -10,16 +12,21 @@
 module SampleData where
 
 import           Control.Applicative
+import qualified Control.Foldl             as L
 import           Control.Lens              hiding (elements)
+import           Control.Monad
 import qualified Data.Bimap                as BM
 import           Data.Binary               (Word64)
 import           Data.Bits
+import           Data.List.Ordered
 import           Data.Map                  (Map)
 import qualified Data.Map                  as M
+import           Data.Maybe
 import           Data.Word
 import           Test.QuickCheck
 import           Test.QuickCheck.Function
 
+import           Ceilometer.Fold
 import           Ceilometer.Types
 import           Ceilometer.Types.Image    (imageVerb)
 import           Ceilometer.Types.Instance (siphashID)
@@ -50,6 +57,13 @@ instance Function PDInstanceVCPU   where function = functionShow
 instance Function PDInstanceRAM    where function = functionShow
 instance Function PDInstanceDisk   where function = functionShow
 instance Function PDInstanceFlavor where function = functionShow
+
+instance Arbitrary a => Arbitrary [Timed a] where
+  arbitrary = do
+    bigNumber <- choose (1, 10000)
+    let ts = [1..bigNumber]
+    vs <- replicateM (fromIntegral bigNumber) arbitrary
+    return $ zipWith Timed ts vs
 
 instance Arbitrary PRSimple        where
   arbitrary = PRSimple <$> arbitrary
@@ -192,6 +206,20 @@ flavorTimedPDs = [ Timed testS flavorPD1
 flavorTimedPDsResult :: [(PFValue PDInstanceFlavor, Word64)]
 flavorTimedPDsResult = [ (flavorID1, 9)
                        , (flavorID2, 4) ]
+
+propSafetyInstance :: [Timed PDInstanceFlavor] -> Bool
+propSafetyInstance x =
+    let testPred (PDInstanceFlavor InstanceActive _) = True
+        testPred _                                   = False
+        fullResult     = L.fold (foldInstanceFlavor (const True)) x
+        filteredResult = L.fold (foldInstanceFlavor testPred    ) x
+        fullKeys       = M.keys fullResult
+        filteredKeys   = M.keys filteredResult
+    in  subset filteredKeys fullKeys &&
+        all (\k -> isJust $ do
+                v  <- M.lookup k fullResult
+                v' <- M.lookup k filteredResult
+                return $ v' <= v) filteredKeys
 
 -- CPU -------------------------------------------------------------------------
 
