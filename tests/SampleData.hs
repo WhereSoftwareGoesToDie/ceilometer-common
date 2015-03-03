@@ -207,6 +207,12 @@ flavorTimedPDsResult :: [(PFValue PDInstanceFlavor, Word64)]
 flavorTimedPDsResult = [ (flavorID1, 9)
                        , (flavorID2, 4) ]
 
+
+-- | Basic safety properties for filtered folding.
+--   The set of keys in the result of the filtered fold should be a subset of
+--   the result of the non-filtered fold.
+--   For each defined key in the filtered result, the corresponding value
+--   should be no larger than in the non-filtered result.
 propSafetyInstance :: [Timed PDInstanceFlavor] -> Bool
 propSafetyInstance x =
     let testPred (PDInstanceFlavor InstanceActive _) = True
