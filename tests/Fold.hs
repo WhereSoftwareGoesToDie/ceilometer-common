@@ -87,8 +87,8 @@ suite = do
     it "ok for example payload"
       $ L.fold (foldInstanceFlavor $ const True) flavorTimedPDs `shouldBe` M.fromList flavorTimedPDsResult
 
-  describe "Filtering instance statuses is sane" $
-      prop "Filtered results are a subset of full results" propSafetyInstance
+  describe "Filtering instance statuses" $
+      prop "is sane" propSafetyInstance
 
   describe "Folding points for POLLSTER resource: IMAGE POLLSTER" $
     it "ok for example payload"
