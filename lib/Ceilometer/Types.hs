@@ -81,7 +81,6 @@ import           Ceilometer.Types.IP
 import           Ceilometer.Types.Neutron
 import           Ceilometer.Types.Snapshot
 import           Ceilometer.Types.Volume
-import           Control.PFold
 import           Vaultaire.Types
 
 
