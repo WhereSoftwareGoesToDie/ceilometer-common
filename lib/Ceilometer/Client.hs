@@ -5,6 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE BangPatterns        #-}
 
 --
 -- Copyright © 2013-2015 Anchor Systems, Pty Ltd and Others
@@ -30,10 +31,12 @@ module Ceilometer.Client
   ) where
 
 import           Control.Applicative
+import           Control.Foldl
 import           Control.Lens
 import           Control.Monad
 import qualified Data.Traversable    as T
 import           Pipes
+import qualified Pipes.Prelude       as P
 
 import           Ceilometer.Fold     as C
 import           Ceilometer.Tags

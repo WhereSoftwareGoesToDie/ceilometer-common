@@ -28,12 +28,18 @@ import           Pipes
 import           Pipes.Internal
 
 
-data Acc x = Term x | More x deriving Functor
+data Acc x
+  = Term {-# UNPACK #-} !x
+  | More {-# UNPACK #-} !x
+  deriving Functor
 
 unwrapAcc :: Acc x -> x
 unwrapAcc (Term x) = x
 unwrapAcc (More x) = x
 {-# INLINE unwrapAcc #-}
+
+
+--------------------------------------------------------------------------------
 
 -- | A "partial" Fold that allows early termination
 data PFold a b = forall x. PFold (Acc x -> a -> Acc x) (Acc x) (Acc x -> b)
@@ -49,7 +55,7 @@ pFold (PFold step begin done) as = F.foldr cons done as begin
 {-# INLINE pFold #-}
 
 pFoldStream :: Monad m => PFold a b -> Producer a m () -> m b
-pFoldStream (PFold step begin done) p0 = loop p0 begin
+pFoldStream (PFold step begin done) p0 = {-# SCC ceilometer_fold #-} loop p0 begin
   where
     loop _ (Term x) = return (done $ Term x)
     loop p (More x) = case p of
