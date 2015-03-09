@@ -215,9 +215,8 @@ foldImagePollster  =  L.Fold (sGaugePollster $ const True) bGaugePollster snd
 --
 timewrapFold :: L.Fold x y -> L.Fold (Timed x) y
 timewrapFold (L.Fold s b e)
-  = L.Fold (\(Timed _ a) (Timed _ x) -> Timed 0 $ s a x)
-           (Timed 0 b)
-           (\(Timed _ v) -> e v)
+  = L.Fold (\a (Timed _ x) -> s a x) b e
+{-# INLINE timewrapFold #-}
 
 
 -- Common Steps ----------------------------------------------------------------
