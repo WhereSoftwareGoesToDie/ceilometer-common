@@ -209,8 +209,9 @@ foldImagePollster  =  L.Fold (sGaugePollster $ const True) bGaugePollster snd
 
 -- Utilities -------------------------------------------------------------------
 
-after :: (y -> z) -> PFold x y -> PFold x z
-after f (PFold s b e) = PFold s b (f . e)
+after :: (y -> z) -> L.Fold x y -> L.Fold x z
+after f (L.Fold s b e) = L.Fold s b (f . e)
+{-# INLINE after #-}
 
 -- | Wrap a fold that doens't depend on time with dummy times.
 --   note: useful to give a unified interface to clients (borel) while keeping
