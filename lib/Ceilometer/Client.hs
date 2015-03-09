@@ -5,7 +5,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
-{-# LANGUAGE BangPatterns        #-}
 
 --
 -- Copyright © 2013-2015 Anchor Systems, Pty Ltd and Others
@@ -132,7 +131,7 @@ foldDecoded
   => Env
   -> Producer (Timed a) m ()
   -> m FoldResult
-foldDecoded env = pFoldStream (mkFold env)
+foldDecoded env = impurely P.foldM (generalize $ mkFold env)
 
 -- | Abort the entire pipeline when encoutering malformed data in the Vault.
 --

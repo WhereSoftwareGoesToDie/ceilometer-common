@@ -78,74 +78,74 @@ class Known a where
 
 instance Known PDCPU where
   mkPrism _ = prSimple . pdCPU
-  mkFold  _ = after RSingle (timewrapFold foldCPU)
+  mkFold  _ = fmap RSingle (timewrapFold foldCPU)
 
 instance Known PDDiskRead where
   mkPrism _ = prSimple . pdDiskRead
-  mkFold  _ = after RSingle (timewrapFold foldDiskRead)
+  mkFold  _ = fmap RSingle (timewrapFold foldDiskRead)
 
 instance Known PDDiskWrite where
   mkPrism _ = prSimple . pdDiskWrite
-  mkFold  _ = after RSingle (timewrapFold foldDiskWrite)
+  mkFold  _ = fmap RSingle (timewrapFold foldDiskWrite)
 
 instance Known PDNeutronTx where
   mkPrism _ = prSimple . pdNeutronTx
-  mkFold  _ = after RSingle (timewrapFold foldNeutronTx)
+  mkFold  _ = fmap RSingle (timewrapFold foldNeutronTx)
 
 instance Known PDNeutronRx where
   mkPrism _ = prSimple . pdNeutronRx
-  mkFold  _ = after RSingle (timewrapFold foldNeutronRx)
+  mkFold  _ = fmap RSingle (timewrapFold foldNeutronRx)
 
 instance Known PDImagePollster where
   mkPrism _ = prSimple . pdImagePollster
-  mkFold  _ = after RMapNum64 foldImagePollster
+  mkFold  _ = fmap RMapNum64 foldImagePollster
 
 instance Known PDVolume where
   mkPrism _ = prCompoundEvent . pdVolume
   mkFold (Env _ _ _ (TimeStamp s) (TimeStamp e))
-    = after RSingle (foldVolume (s,e))
+    = fmap RSingle (foldVolume (s,e))
 
 instance Known PDSSD where
   mkPrism _  = prCompoundEvent . pdSSD
   mkFold (Env _ _ _ (TimeStamp s) (TimeStamp e))
-    = after RSingle (foldSSD (s,e))
+    = fmap RSingle (foldSSD (s,e))
 
 instance Known PDImage where
   mkPrism _  = prCompoundEvent . pdImage
   mkFold (Env _ _ _ (TimeStamp s) (TimeStamp e))
-    = after RSingle (foldImage (s,e))
+    = fmap RSingle (foldImage (s,e))
 
 instance Known PDSnapshot where
   mkPrism _  = prCompoundEvent . pdSnapshot
   mkFold (Env _ _ _ (TimeStamp s) (TimeStamp e))
-    = after RSingle (foldSnapshot (s,e))
+    = fmap RSingle (foldSnapshot (s,e))
 
 instance Known PDIP where
   mkPrism _  = prCompoundEvent . pdIP
   mkFold (Env _ _ _ (TimeStamp s) (TimeStamp e))
-    = after RSingle (foldIP (s,e))
+    = fmap RSingle (foldIP (s,e))
 
 instance Known PDInstanceVCPU where
   mkPrism _                = prCompoundPollster . pdInstanceVCPU
-  mkFold  (Env _ _  f _ _) = after RMapNum32
+  mkFold  (Env _ _  f _ _) = fmap RMapNum32
     $ foldInstanceVCPU
     $ filterByInstanceStatus f (\(PDInstanceVCPU s _) -> s)
 
 instance Known PDInstanceRAM where
   mkPrism _                = prCompoundPollster . pdInstanceRAM
-  mkFold  (Env _ _  f _ _) = after RMapNum32
+  mkFold  (Env _ _  f _ _) = fmap RMapNum32
     $ foldInstanceRAM 
     $ filterByInstanceStatus f (\(PDInstanceRAM s _) -> s)
 
 instance Known PDInstanceDisk where
   mkPrism _ = prCompoundPollster . pdInstanceDisk
-  mkFold  (Env _ _  f _ _) = after RMapNum32
+  mkFold  (Env _ _  f _ _) = fmap RMapNum32
     $ foldInstanceDisk 
     $ filterByInstanceStatus f (\(PDInstanceDisk s _) -> s)
 
 instance Known PDInstanceFlavor where
   mkPrism (Env fm _ _ _ _) = prCompoundPollster . pdInstanceFlavor fm
-  mkFold  (Env _ _  f _ _) = after RMapText
+  mkFold  (Env _ _  f _ _) = fmap RMapText
     $ foldInstanceFlavor 
     $ filterByInstanceStatus f (\(PDInstanceFlavor s _) -> s)
 
@@ -208,10 +208,6 @@ foldImagePollster  :: L.Fold (Timed PDImagePollster)  (Map PFValue64 Word64)
 foldImagePollster  =  L.Fold (sGaugePollster $ const True) bGaugePollster snd
 
 -- Utilities -------------------------------------------------------------------
-
-after :: (y -> z) -> L.Fold x y -> L.Fold x z
-after f (L.Fold s b e) = L.Fold s b (f . e)
-{-# INLINE after #-}
 
 -- | Wrap a fold that doens't depend on time with dummy times.
 --   note: useful to give a unified interface to clients (borel) while keeping
