@@ -1,5 +1,5 @@
 name:                ceilometer-common
-version:             0.2.0
+version:             0.2.1
 synopsis:            Common Haskell types and encoding for ceilometer
 description:         Provides a set of common types for use with ceilometer related packages.
 homepage:            https://github.com/anchor/ceilometer-common
@@ -32,7 +32,6 @@ library
                        Ceilometer.Types.IP
                        Ceilometer.Types.Neutron
                        Ceilometer.Types.Snapshot
-                       Control.PFold
 
   build-depends:       base >=4.7 && < 5
                      , bimap >= 0.2
