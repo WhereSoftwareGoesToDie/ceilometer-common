@@ -209,14 +209,17 @@ foldImagePollster  =  L.Fold (sGaugePollster $ const True) bGaugePollster snd
 
 -- Utilities -------------------------------------------------------------------
 
--- | Wrap a fold that doens't depend on time with dummy times.
---   note: useful to give a unified interface to clients (borel) while keeping
---         concerns separate for testing.
+-- | Wrap a fold that doens't depend on time.
 --
+-- 
 timewrapFold :: L.Fold x y -> L.Fold (Timed x) y
-timewrapFold (L.Fold s b e)
-  = L.Fold (\a (Timed _ x) -> s a x) b e
-{-# INLINE timewrapFold #-}
+timewrapFold (L.Fold s b e) = L.Fold (\a (Timed _ x) -> s a x) b e
+
+-- We want the result to not be retained, inlining this transform doesn't help.
+{-# NOINLINE timewrapFold #-}
+{-# RULES
+"timewrapFold" forall s b e. timewrapFold (L.Fold s b e) = L.Fold (\a (Timed _ x) -> s a x) b e
+  #-}
 
 
 -- Common Steps ----------------------------------------------------------------
