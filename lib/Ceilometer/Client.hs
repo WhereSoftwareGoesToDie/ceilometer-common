@@ -30,10 +30,12 @@ module Ceilometer.Client
   ) where
 
 import           Control.Applicative
+import           Control.Foldl
 import           Control.Lens
 import           Control.Monad
 import qualified Data.Traversable    as T
 import           Pipes
+import qualified Pipes.Prelude       as P
 
 import           Ceilometer.Fold     as C
 import           Ceilometer.Tags
@@ -129,7 +131,7 @@ foldDecoded
   => Env
   -> Producer (Timed a) m ()
   -> m FoldResult
-foldDecoded env = pFoldStream (mkFold env)
+foldDecoded env = impurely P.foldM (generalize $ mkFold env)
 
 -- | Abort the entire pipeline when encoutering malformed data in the Vault.
 --
