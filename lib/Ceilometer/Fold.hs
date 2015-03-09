@@ -155,57 +155,73 @@ instance Known PDInstanceFlavor where
 
 foldCPU :: L.Fold PDCPU Word64
 foldCPU = L.Fold sCumulative bCumulative eCumulative
+{-# INLINE foldCPU #-}
 
 foldDiskRead :: L.Fold PDDiskRead Word64
 foldDiskRead = L.Fold sCumulative bCumulative eCumulative
+{-# INLINE foldDiskRead #-}
 
 foldDiskWrite :: L.Fold PDDiskWrite Word64
 foldDiskWrite = L.Fold sCumulative bCumulative eCumulative
+{-# INLINE foldDiskWrite #-}
 
 foldNeutronTx :: L.Fold PDNeutronTx Word64
 foldNeutronTx = L.Fold sCumulative bCumulative eCumulative
+{-# INLINE foldNeutronTx #-}
 
 foldNeutronRx :: L.Fold PDNeutronRx Word64
 foldNeutronRx = L.Fold sCumulative bCumulative eCumulative
+{-# INLINE foldNeutronRx #-}
 
 foldVolume :: Window -> L.Fold (Timed PDVolume) Word64
 foldVolume window = L.Fold step bEvent (eEvent window standardEventFolder)
   where step = sEvent window 
+{-# INLINE foldVolume #-}
 
 foldSSD :: Window -> L.Fold (Timed PDSSD) Word64
 foldSSD window = L.Fold step bEvent (eEvent window standardEventFolder)
   where step = sEvent window 
+{-# INLINE foldSSD #-}
 
 foldImage :: Window -> L.Fold (Timed PDImage) Word64
 foldImage window = L.Fold step bEvent (eEvent window standardEventFolder)
   where step = sEvent window 
+{-# INLINE foldImage #-}
 
 foldSnapshot :: Window -> L.Fold (Timed PDSnapshot) Word64
 foldSnapshot window = L.Fold step bEvent (eEvent window standardEventFolder)
   where step = sEvent window 
+{-# INLINE foldSnapshot #-}
 
 foldIP :: Window ->  L.Fold (Timed PDIP) Word64
 foldIP window = L.Fold step bEvent (eEvent window ipEventFolder)
   where step = sEvent window 
+{-# INLINE foldIP #-}
 
 foldInstanceFlavor   :: (PDInstanceFlavor -> Bool)
                      -> L.Fold (Timed PDInstanceFlavor) (Map PFValueText Word64)
 foldInstanceFlavor f = L.Fold (sGaugePollster f) bGaugePollster snd
+{-# INLINE foldInstanceFlavor #-}
 
 foldInstanceVCPU     :: (PDInstanceVCPU -> Bool)
                      -> L.Fold (Timed PDInstanceVCPU) (Map PFValue32 Word64)
 foldInstanceVCPU   f =  L.Fold (sGaugePollster f) bGaugePollster snd
+{-# INLINE foldInstanceVCPU #-}
 
 foldInstanceRAM      :: (PDInstanceRAM -> Bool)
                      -> L.Fold (Timed PDInstanceRAM)    (Map PFValue32 Word64)
 foldInstanceRAM    f =  L.Fold (sGaugePollster f) bGaugePollster snd
+{-# INLINE foldInstanceRAM #-}
 
 foldInstanceDisk     :: (PDInstanceDisk -> Bool)
                      -> L.Fold (Timed PDInstanceDisk)   (Map PFValue32 Word64)
 foldInstanceDisk   f =  L.Fold (sGaugePollster f) bGaugePollster snd
+{-# INLINE foldInstanceDisk #-}
 
 foldImagePollster  :: L.Fold (Timed PDImagePollster)  (Map PFValue64 Word64)
 foldImagePollster  =  L.Fold (sGaugePollster $ const True) bGaugePollster snd
+{-# INLINE foldImagePollster #-}
+
 
 -- Utilities -------------------------------------------------------------------
 
@@ -214,12 +230,7 @@ foldImagePollster  =  L.Fold (sGaugePollster $ const True) bGaugePollster snd
 -- 
 timewrapFold :: L.Fold x y -> L.Fold (Timed x) y
 timewrapFold (L.Fold s b e) = L.Fold (\a (Timed _ x) -> s a x) b e
-
--- We want the result to not be retained, inlining this transform doesn't help.
-{-# NOINLINE timewrapFold #-}
-{-# RULES
-"timewrapFold" forall s b e. timewrapFold (L.Fold s b e) = L.Fold (\a (Timed _ x) -> s a x) b e
-  #-}
+{-# INLINE timewrapFold #-}
 
 
 -- Common Steps ----------------------------------------------------------------
