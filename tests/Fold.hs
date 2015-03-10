@@ -68,19 +68,19 @@ suite = do
   -- "Gauge Event" resources
   describe "Folding points for EVENT resource: VOLUME" $
     it "ok for example payload"
-      $ pFold foldVolumeAll volumeTimedPDs `shouldBe` volumeTimedPDsResult
+      $ L.fold foldVolumeAll volumeTimedPDs `shouldBe` volumeTimedPDsResult
 
   describe "Folding points for EVENT resource: SSD" $
     it "ok for example payload"
-      $ pFold foldSSDAll ssdTimedPDs `shouldBe` ssdTimedPDsResult
+      $ L.fold foldSSDAll ssdTimedPDs `shouldBe` ssdTimedPDsResult
 
   describe "Folding points for EVENT resource: IMAGE" $
     it "ok for example payload"
-      $ pFold foldImageAll imageTimedPDs `shouldBe` imageTimedPDsResult
+      $ L.fold foldImageAll imageTimedPDs `shouldBe` imageTimedPDsResult
 
   describe "Folding points for EVENT resource: SNAPSHOT" $
     it "ok for example payload"
-      $ pFold foldSnapshotAll snapshotTimedPDs `shouldBe` snapshotTimedPDsResult
+      $ L.fold foldSnapshotAll snapshotTimedPDs `shouldBe` snapshotTimedPDsResult
 
   -- "Gauge Pollster" resources
   describe "Folding points for POLLSTER resource: INSTANCE FLAVOR" $
@@ -94,6 +94,8 @@ suite = do
     it "ok for example payload"
       $ L.fold foldImagePollster imagePTimedPDs `shouldBe` imagePTimedPDsResult
 
+{- This test no longer applies since we assume no more event after delete
+  
   describe "Folding points on edge cases:" $
     prop "discards the rest after VOLUME DELETE" $ property $ do
       vs0 <- listOf volumeNonDelete
@@ -101,7 +103,8 @@ suite = do
       let bomb = PDVolume VolumeAvailable VolumeDelete Start 10
       let xs0  = zipWith Timed [testS..] $ vs0 ++ [bomb]
       let xs1  = zipWith Timed [testS..] $ vs0 ++ [bomb] ++ vs1
-      return $ pFold foldVolumeAll xs0 == pFold foldVolumeAll xs1
+      return $ L.fold foldVolumeAll xs0 == L.fold foldVolumeAll xs1
+-}
 
   where foldVolumeAll   = foldVolume   (testS, testE)
         foldSSDAll      = foldSSD      (testS, testE)

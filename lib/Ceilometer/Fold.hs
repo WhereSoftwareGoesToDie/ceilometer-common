@@ -175,27 +175,47 @@ foldNeutronRx = L.Fold sCumulative bCumulative eCumulative
 
 foldVolume :: Window -> L.Fold (Timed PDVolume) Word64
 foldVolume window = L.Fold step bEvent (eEvent window standardEventFolder)
-  where step = sEvent window 
+  where step (prev, acc) (Timed end (PDVolume _ VolumeDelete _ _)) = (Nothing, go end acc prev)
+        step a            x                                        = sEvent window  a x
+        -- adds until delete
+        go end acc (Just x) = insertVal x (end - x ^. time) acc
+        go _   acc Nothing  = acc
 {-# INLINE foldVolume #-}
 
 foldSSD :: Window -> L.Fold (Timed PDSSD) Word64
 foldSSD window = L.Fold step bEvent (eEvent window standardEventFolder)
-  where step = sEvent window 
+  where step (prev, acc) (Timed end (PDSSD _ VolumeDelete _ _)) = (Nothing, go end acc prev)
+        step a            x                                     = sEvent window  a x
+        -- adds until delete
+        go end acc (Just x) = insertVal x (end - x ^. time) acc
+        go _   acc Nothing  = acc
 {-# INLINE foldSSD #-}
 
 foldImage :: Window -> L.Fold (Timed PDImage) Word64
 foldImage window = L.Fold step bEvent (eEvent window standardEventFolder)
-  where step = sEvent window 
+  where step (prev, acc) (Timed end (PDImage _ ImageDelete _ _)) = (Nothing, go end acc prev)
+        step a            x                                      = sEvent window  a x
+        -- adds until delete
+        go end acc (Just x) = insertVal x (end - x ^. time) acc
+        go _   acc Nothing  = acc
 {-# INLINE foldImage #-}
 
 foldSnapshot :: Window -> L.Fold (Timed PDSnapshot) Word64
 foldSnapshot window = L.Fold step bEvent (eEvent window standardEventFolder)
-  where step = sEvent window 
+  where step (prev, acc) (Timed end (PDSnapshot _ SnapshotDelete _ _)) = (Nothing, go end acc prev)
+        step a            x                                            = sEvent window  a x
+        -- adds until delete
+        go end acc (Just x) = insertVal x (end - x ^. time) acc
+        go _   acc Nothing  = acc
 {-# INLINE foldSnapshot #-}
 
 foldIP :: Window ->  L.Fold (Timed PDIP) Word64
 foldIP window = L.Fold step bEvent (eEvent window ipEventFolder)
-  where step = sEvent window 
+  where step (prev, acc) (Timed end (PDIP _ IPDelete _ _)) = (Nothing, go end acc prev)
+        step a            x                                = sEvent window  a x
+        -- adds until delete
+        go end acc (Just x) = insertVal x (end - x ^. time) acc
+        go _   acc Nothing  = acc
 {-# INLINE foldIP #-}
 
 foldInstanceFlavor   :: (PDInstanceFlavor -> Bool)
