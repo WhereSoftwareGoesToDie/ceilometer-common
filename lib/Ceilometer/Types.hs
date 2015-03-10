@@ -58,7 +58,7 @@ module Ceilometer.Types
 
     -- * Values
   , Valued, value
-  , Timed(Timed), time
+  , Timed(..), time
 
     -- * Interface
   , Env(..), Filters(..)
@@ -105,8 +105,10 @@ filterByInstanceStatus (Filters f) g = f . g
 
 -- | Values with a TimeStamp.
 --
-data Timed value = Timed { _time :: !Word64, _val :: value }
-     deriving (Show, Functor, Foldable, Traversable)
+data Timed value = Timed
+  { _time :: {-# UNPACK #-} !Word64
+  , _val  :: {-# UNPACK #-} !value }
+  deriving (Show, Functor, Foldable, Traversable)
 
 makeLenses ''Timed
 

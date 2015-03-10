@@ -305,7 +305,8 @@ sGaugePollster
   => (x -> Bool) -> AGaugePollster x -> Timed x -> AGaugePollster x
 sGaugePollster _          (Nothing,            acc) x =  (Just x, acc)
 sGaugePollster isBillable (Just (Timed t1 v1), acc) x@(Timed t2 _)
-  = let delta = t2 - t1
+  = {-# SCC loop_body #-}
+    let delta = t2 - t1
         !acc' = if   isBillable v1
                 then insertVal v1 (fromIntegral delta) acc
                 else acc
