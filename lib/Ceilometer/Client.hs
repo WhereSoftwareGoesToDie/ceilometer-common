@@ -125,9 +125,12 @@ decode
   :: (Known a, Monad m)
   => Env
   -> Pipe SimplePoint (Maybe (Timed a)) m ()
-decode env = forever $ do
-  SimplePoint _ (TimeStamp t) v <- await
-  yield $ T.sequence $ Timed t $ v ^? clonePrism (mkPrism env)
+decode env
+  = let p = clonePrism (mkPrism env)
+    in  forever $ {-# SCC actual_decode #-} do
+          SimplePoint _ (TimeStamp t) v <- await
+          yield $ T.sequence $ Timed t $ v ^? p
+{-# INLINE decode #-}
 
 foldDecoded
   :: (Known a, Monad m)
@@ -135,10 +138,13 @@ foldDecoded
   -> Producer (Timed a) m ()
   -> m FoldResult
 foldDecoded env = impurely P.foldM (generalize $ mkFold env)
+{-# INLINE foldDecoded #-}
 
 -- | Abort the entire pipeline when encoutering malformed data in the Vault.
 --
 blowup :: Monad m => Pipe (Maybe x) x m r
-blowup = forever $ do
+blowup = forever $ {-# SCC blowup #-} do
   x <- await
-  maybe (error "fatal: unparseable point") yield x
+  --maybe (error "fatal: unparseable point") yield x
+  maybe (return ()) yield x
+{-# INLINE blowup #-}

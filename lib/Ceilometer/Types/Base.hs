@@ -48,6 +48,7 @@ newtype PRSimple = PRSimple { _prSimpleVal :: Word64 }
 
 prSimple :: Iso' Word64 PRSimple
 prSimple = iso PRSimple _prSimpleVal
+{-# INLINE prSimple #-}
 
 -- | Payload Raw Compound Event
 --
@@ -81,6 +82,7 @@ prCompoundEvent = iso getIt putIt
           B.putWord8    $ x ^. eventEndpoint
           B.putWord8    $ x ^. eventVerb
           B.putWord8    $ x ^. eventStatus
+{-# INLINE prCompoundEvent #-}
 
 data PRCompoundPollster = PRCompoundPollster
   { _pollsterVal    :: {-# UNPACK #-} !Word32 -- ^ Payload
@@ -109,6 +111,7 @@ prCompoundPollster = iso getIt putIt
           B.putWord8      0
           B.putWord8      0
           B.putWord8    $ x ^. pollsterStatus
+{-# INLINE prCompoundPollster #-}
 
 
 -- Decoded Payload Fields ------------------------------------------------------

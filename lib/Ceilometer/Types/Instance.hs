@@ -60,8 +60,10 @@ $(declarePF    "Instance"
 
 -- BOILERPLATE GALORE
 
-data PDInstanceVCPU = PDInstanceVCPU PFInstanceStatus PFValue32
-     deriving (Eq, Show, Read)
+data PDInstanceVCPU = PDInstanceVCPU
+  {-# UNPACK #-} !PFInstanceStatus
+  {-# UNPACK #-} !PFValue32
+  deriving (Eq, Show, Read)
 
 pdInstanceVCPU :: Prism' PRCompoundPollster PDInstanceVCPU
 pdInstanceVCPU = prism' pretty parse
@@ -73,9 +75,12 @@ pdInstanceVCPU = prism' pretty parse
           = PRCompoundPollster
             val
             (status ^. re pfInstanceStatus)
+{-# INLINE pdInstanceVCPU #-}
 
-data PDInstanceRAM = PDInstanceRAM PFInstanceStatus PFValue32
-     deriving (Eq, Show, Read)
+data PDInstanceRAM = PDInstanceRAM
+  {-# UNPACK #-} !PFInstanceStatus
+  {-# UNPACK #-} !PFValue32
+  deriving (Eq, Show, Read)
 
 pdInstanceRAM :: Prism' PRCompoundPollster PDInstanceRAM
 pdInstanceRAM = prism' pretty parse
@@ -87,9 +92,12 @@ pdInstanceRAM = prism' pretty parse
           = PRCompoundPollster
             val
             (status ^. re pfInstanceStatus)
+{-# INLINE pdInstanceRAM #-}
 
-data PDInstanceDisk = PDInstanceDisk PFInstanceStatus PFValue32
-     deriving (Eq, Show, Read)
+data PDInstanceDisk = PDInstanceDisk
+  {-# UNPACK #-} !PFInstanceStatus
+  {-# UNPACK #-} !PFValue32
+  deriving (Eq, Show, Read)
 
 pdInstanceDisk :: Prism' PRCompoundPollster PDInstanceDisk
 pdInstanceDisk = prism' pretty parse
@@ -101,9 +109,12 @@ pdInstanceDisk = prism' pretty parse
           = PRCompoundPollster
             val
             (status ^. re pfInstanceStatus)
+{-# INLINE pdInstanceDisk #-}
 
-data PDInstanceFlavor = PDInstanceFlavor PFInstanceStatus PFValueText
-     deriving (Eq, Show, Read)
+data PDInstanceFlavor = PDInstanceFlavor
+  {-# UNPACK #-} !PFInstanceStatus
+  {-# UNPACK #-} !PFValueText
+  deriving (Eq, Show, Read)
 
 pdInstanceFlavor :: FlavorMap -> Prism' PRCompoundPollster PDInstanceFlavor
 pdInstanceFlavor fm = prism' pretty parse
@@ -115,6 +126,7 @@ pdInstanceFlavor fm = prism' pretty parse
           = PRCompoundPollster
             (siphashID val)
             (status ^. re pfInstanceStatus)
+{-# INLINE pdInstanceFlavor #-}
 
 
 -- FROM COLLECTOR CODE
