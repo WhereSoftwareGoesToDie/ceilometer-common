@@ -1,7 +1,10 @@
 name:                ceilometer-common
 version:             0.2.3
-synopsis:            Common Haskell types and encoding for ceilometer
-description:         Provides a set of common types for use with ceilometer related packages.
+synopsis:            Common Haskell types and encoding for OpenStack Ceilometer
+description:         This package defines a library with two interfaces: one 
+                     for working with the data producers (e.g. the collector for 
+                     OpenStack Ceilometer) and one for the consumers (e.g. the 
+                     Borel metering and billing system).
 homepage:            https://github.com/anchor/ceilometer-common
 license:             BSD3
 license-file:        LICENSE
