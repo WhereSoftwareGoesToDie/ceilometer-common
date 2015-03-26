@@ -26,7 +26,10 @@ module Ceilometer.Client
   , decodeFold_
 
     -- * Re-exports
-  , module C
+  , module Ceilometer.Fold 
+  , module Ceilometer.Tags
+  , module Ceilometer.Types
+  , module Vaultaire.Types
   ) where
 
 import           Control.Applicative
@@ -37,9 +40,9 @@ import qualified Data.Traversable    as T
 import           Pipes
 import qualified Pipes.Prelude       as P
 
-import           Ceilometer.Fold     as C
+import           Ceilometer.Fold    
 import           Ceilometer.Tags
-import           Ceilometer.Types    as C
+import           Ceilometer.Types  
 import           Vaultaire.Types
 
 
