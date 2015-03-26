@@ -1,5 +1,5 @@
 name:                ceilometer-common
-version:             0.2.2
+version:             0.2.3
 synopsis:            Common Haskell types and encoding for ceilometer
 description:         Provides a set of common types for use with ceilometer related packages.
 homepage:            https://github.com/anchor/ceilometer-common
@@ -55,7 +55,9 @@ test-suite unit
   hs-source-dirs:      tests,lib
 
   main-is:             Main.hs
-
+  other-modules:       Fold
+                     , Prisms
+                     , SampleData
   build-depends:       base >=4.7 && < 5
                      , QuickCheck >= 2.7
                      , bimap >= 0.2
