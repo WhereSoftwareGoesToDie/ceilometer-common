@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+
 module Fold where
 
 import qualified Control.Foldl         as L
@@ -95,7 +96,7 @@ suite = do
       $ L.fold foldImagePollster imagePTimedPDs `shouldBe` imagePTimedPDsResult
 
 {- This test no longer applies since we assume no more event after delete
-  
+
   describe "Folding points on edge cases:" $
     prop "discards the rest after VOLUME DELETE" $ property $ do
       vs0 <- listOf volumeNonDelete

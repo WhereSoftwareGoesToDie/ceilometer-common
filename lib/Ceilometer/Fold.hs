@@ -11,12 +11,12 @@
 -- to be used by clients such as Borel.
 --
 
+{-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE MultiWayIf          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
-{-# LANGUAGE BangPatterns #-}
 
 {-# OPTIONS -fno-warn-missing-signatures #-}
 
@@ -134,19 +134,19 @@ instance Known PDInstanceVCPU where
 instance Known PDInstanceRAM where
   mkPrism _                = prCompoundPollster . pdInstanceRAM
   mkFold  (Env _ _  f _ _) = fmap RMapNum32
-    $ foldInstanceRAM 
+    $ foldInstanceRAM
     $ filterByInstanceStatus f (\(PDInstanceRAM s _) -> s)
 
 instance Known PDInstanceDisk where
   mkPrism _ = prCompoundPollster . pdInstanceDisk
   mkFold  (Env _ _  f _ _) = fmap RMapNum32
-    $ foldInstanceDisk 
+    $ foldInstanceDisk
     $ filterByInstanceStatus f (\(PDInstanceDisk s _) -> s)
 
 instance Known PDInstanceFlavor where
   mkPrism (Env fm _ _ _ _) = prCompoundPollster . pdInstanceFlavor fm
   mkFold  (Env _ _  f _ _) = fmap RMapText
-    $ foldInstanceFlavor 
+    $ foldInstanceFlavor
     $ filterByInstanceStatus f (\(PDInstanceFlavor s _) -> s)
 
 
@@ -247,7 +247,7 @@ foldImagePollster  =  L.Fold (sGaugePollster $ const True) bGaugePollster snd
 
 -- | Wrap a fold that doens't depend on time.
 --
--- 
+--
 timewrapFold :: L.Fold x y -> L.Fold (Timed x) y
 timewrapFold (L.Fold s b e) = L.Fold (\a (Timed _ x) -> s a x) b e
 {-# INLINE timewrapFold #-}
