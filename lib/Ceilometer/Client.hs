@@ -26,25 +26,24 @@ module Ceilometer.Client
   , decodeFold_
 
     -- * Re-exports
-  , module Ceilometer.Fold 
-  , module Ceilometer.Tags
-  , module Ceilometer.Types
-  , module Vaultaire.Types
+  , module X
   ) where
 
 import           Control.Applicative
 import           Control.Foldl
 import           Control.Lens
 import           Control.Monad
+import           Data.Monoid         ((<>))
 import qualified Data.Traversable    as T
 import           Pipes
 import qualified Pipes.Prelude       as P
+import           System.IO           (hPutStrLn, stderr)
+import           System.IO.Unsafe    (unsafePerformIO)
 
-import           Ceilometer.Fold    
-import           Ceilometer.Tags
-import           Ceilometer.Types  
-import           Vaultaire.Types
-
+import           Ceilometer.Fold     as X
+import           Ceilometer.Tags     as X
+import           Ceilometer.Types    as X
+import           Vaultaire.Types     as X
 
 decodeFold
   :: (Monad m, Applicative m)
@@ -119,15 +118,25 @@ decodeFold_
   -> Producer SimplePoint m ()
   -> m FoldResult
 decodeFold_ _ env raw
-  = foldDecoded env (raw >-> (decode env :: Pipe SimplePoint (Maybe (Timed a)) m ()) >-> blowup)
+  = foldDecoded env (raw >-> (decode env :: Pipe SimplePoint (Timed a) m ()))
 
 decode
   :: (Known a, Monad m)
   => Env
-  -> Pipe SimplePoint (Maybe (Timed a)) m ()
+  -> Pipe SimplePoint (Timed a) m ()
 decode env = forever $ do
-  SimplePoint _ (TimeStamp t) v <- await
-  yield $ T.sequence $ Timed t $ v ^? clonePrism (mkPrism env)
+  p@(SimplePoint _ (TimeStamp t) v) <- await
+  let x = T.sequence $ Timed t $ v ^? clonePrism (mkPrism env)
+  case x of
+    Nothing -> do
+      -- Originally this would call error on Nothing, instead we print an angry
+      -- message and try to keep going. This *really* shoudn't happen for any
+      -- billing runs after August 2015, but due to a terrible recovery of data
+      -- we have some invalid points that are hard to get rid of.
+      let msg = "This shouldn't happen after August 2015, could not decode point:\n\t"
+              <> show p
+      return $! unsafePerformIO $ hPutStrLn stderr msg
+    Just x' -> yield x'
 
 foldDecoded
   :: (Known a, Monad m)
@@ -135,10 +144,3 @@ foldDecoded
   -> Producer (Timed a) m ()
   -> m FoldResult
 foldDecoded env = impurely P.foldM (generalize $ mkFold env)
-
--- | Abort the entire pipeline when encoutering malformed data in the Vault.
---
-blowup :: Monad m => Pipe (Maybe x) x m r
-blowup = forever $ do
-  x <- await
-  maybe (error "fatal: unparseable point") yield x
